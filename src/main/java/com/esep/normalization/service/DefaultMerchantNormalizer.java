@@ -2,27 +2,40 @@ package com.esep.normalization.service;
 
 import com.esep.normalization.interfaces.MerchantNormalizer;
 import com.esep.normalization.model.NormalizedMerchant;
-import com.esep.normalization.util.MerchantTextUtils;
-import org.springframework.stereotype.Component;
+import com.esep.normalization.rules.NormalizationRule;
+import com.esep.normalization.rules.NormalizeSpacesRule;
+import com.esep.normalization.rules.RemoveBranchNumberRule;
+import com.esep.normalization.rules.RemoveLegalPrefixRule;
+import com.esep.normalization.rules.RemoveLocationSuffixRule;
+import com.esep.normalization.rules.RemoveSpecialCharactersRule;
+import com.esep.normalization.rules.TrimRule;
+import com.esep.normalization.rules.UpperCaseRule;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * Базовая заготовка нормализатора названий продавцов.
  */
-@Component
 public class DefaultMerchantNormalizer implements MerchantNormalizer {
+
+    private static final List<NormalizationRule> RULES = List.of(
+            new TrimRule(),
+            new UpperCaseRule(),
+            new NormalizeSpacesRule(),
+            new RemoveSpecialCharactersRule(),
+            new RemoveLegalPrefixRule(),
+            new RemoveLocationSuffixRule(),
+            new RemoveBranchNumberRule()
+    );
 
     @Override
     public NormalizedMerchant normalize(String merchantName) {
-        String normalizedName = MerchantTextUtils.trim(merchantName);
-        normalizedName = MerchantTextUtils.toUpper(normalizedName);
-        normalizedName = MerchantTextUtils.normalizeSpaces(normalizedName);
-        normalizedName = MerchantTextUtils.removeSpecialCharacters(normalizedName);
-        normalizedName = MerchantTextUtils.removeLegalEntityPrefix(normalizedName);
-        normalizedName = MerchantTextUtils.removeLocationSuffix(normalizedName);
-        normalizedName = MerchantTextUtils.removeBranchNumber(normalizedName);
-        normalizedName = MerchantTextUtils.trim(normalizedName);
+        String normalizedName = merchantName;
+
+        for (NormalizationRule rule : RULES) {
+            normalizedName = rule.apply(normalizedName);
+        }
 
         BigDecimal confidence = normalizedName.isEmpty() ? BigDecimal.ZERO : BigDecimal.ONE;
         return new NormalizedMerchant(merchantName, normalizedName, confidence);
