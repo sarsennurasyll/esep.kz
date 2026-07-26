@@ -8,8 +8,10 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
@@ -28,9 +30,20 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashSet;
+import java.util.Set;
 
+/**
+ * Запись базы знаний о продавце и результате его классификации.
+ */
 @Entity
-@Table(name = "merchants")
+@Table(
+        name = "merchants",
+        indexes = {
+                @Index(name = "uk_merchants_normalized_name", columnList = "normalized_name", unique = true),
+                @Index(name = "idx_merchants_category_id", columnList = "category_id")
+        }
+)
 @Getter
 @Setter
 @Builder
@@ -49,7 +62,7 @@ public class Merchant {
 
     @NotBlank
     @Size(max = 255)
-    @Column(nullable = false, unique = true, length = 255)
+    @Column(nullable = false, length = 255)
     private String normalizedName;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -77,6 +90,27 @@ public class Merchant {
     @Column(nullable = false)
     @Builder.Default
     private long timesMatched = 0;
+
+    @PositiveOrZero
+    @Column(nullable = false)
+    @Builder.Default
+    private long confirmedCount = 0;
+
+    @PositiveOrZero
+    @Column(nullable = false)
+    @Builder.Default
+    private long rejectedCount = 0;
+
+    private Instant lastVerifiedAt;
+
+    @OneToMany(
+            mappedBy = "merchant",
+            cascade = jakarta.persistence.CascadeType.ALL,
+            orphanRemoval = true,
+            fetch = FetchType.LAZY
+    )
+    @Builder.Default
+    private Set<MerchantAlias> aliases = new HashSet<>();
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

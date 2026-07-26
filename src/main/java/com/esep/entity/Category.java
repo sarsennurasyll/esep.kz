@@ -15,6 +15,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * Справочник категорий для классификации продавцов.
+ */
 @Entity
 @Table(name = "categories")
 @Getter
