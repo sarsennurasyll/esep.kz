@@ -1,0 +1,12 @@
+package com.esep;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class EsepApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(EsepApplication.class, args);
+    }
+}
