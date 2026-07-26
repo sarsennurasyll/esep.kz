@@ -19,6 +19,10 @@ public class DefaultMerchantNormalizer implements MerchantNormalizer {
         normalizedName = MerchantTextUtils.toUpper(normalizedName);
         normalizedName = MerchantTextUtils.normalizeSpaces(normalizedName);
         normalizedName = MerchantTextUtils.removeSpecialCharacters(normalizedName);
+        normalizedName = MerchantTextUtils.removeLegalEntityPrefix(normalizedName);
+        normalizedName = MerchantTextUtils.removeLocationSuffix(normalizedName);
+        normalizedName = MerchantTextUtils.removeBranchNumber(normalizedName);
+        normalizedName = MerchantTextUtils.trim(normalizedName);
 
         BigDecimal confidence = normalizedName.isEmpty() ? BigDecimal.ZERO : BigDecimal.ONE;
         return new NormalizedMerchant(merchantName, normalizedName, confidence);
