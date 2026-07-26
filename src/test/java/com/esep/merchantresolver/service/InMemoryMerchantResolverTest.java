@@ -1,5 +1,6 @@
 package com.esep.merchantresolver.service;
 
+import com.esep.merchantresolver.repository.InMemoryMerchantAliasCatalog;
 import com.esep.merchantresolver.repository.InMemoryMerchantRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -10,7 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class InMemoryMerchantResolverTest {
 
     private final InMemoryMerchantResolver merchantResolver = new InMemoryMerchantResolver(
-            new InMemoryMerchantRepository()
+            new InMemoryMerchantRepository(),
+            new InMemoryMerchantAliasCatalog()
     );
 
     @ParameterizedTest
@@ -40,6 +42,15 @@ class InMemoryMerchantResolverTest {
         assertThat(result.confidence()).isZero();
         assertThat(result.merchantId()).isNull();
         assertThat(result.displayName()).isNull();
+    }
+
+    @Test
+    void shouldResolveVerifiedAlias() {
+        var result = merchantResolver.resolve("TOO MAGNUM");
+
+        assertThat(result.matched()).isTrue();
+        assertThat(result.exactMatch()).isTrue();
+        assertThat(result.displayName()).isEqualTo("MAGNUM");
     }
 
     @Test

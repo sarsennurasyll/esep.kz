@@ -1,7 +1,9 @@
 package com.esep.merchantresolver.service;
 
+import com.esep.merchantresolver.interfaces.MerchantAliasCatalog;
 import com.esep.merchantresolver.interfaces.MerchantCatalog;
 import com.esep.merchantresolver.interfaces.MerchantResolver;
+import com.esep.merchantresolver.model.MerchantAliasRecord;
 import com.esep.merchantresolver.model.MerchantMatch;
 import com.esep.merchantresolver.model.MerchantRecord;
 
@@ -13,9 +15,11 @@ import java.util.Optional;
 public class InMemoryMerchantResolver implements MerchantResolver {
 
     private final MerchantCatalog merchantCatalog;
+    private final MerchantAliasCatalog merchantAliasCatalog;
 
-    public InMemoryMerchantResolver(MerchantCatalog merchantCatalog) {
+    public InMemoryMerchantResolver(MerchantCatalog merchantCatalog, MerchantAliasCatalog merchantAliasCatalog) {
         this.merchantCatalog = merchantCatalog;
+        this.merchantAliasCatalog = merchantAliasCatalog;
     }
 
     @Override
@@ -29,7 +33,9 @@ public class InMemoryMerchantResolver implements MerchantResolver {
             return toExactMatch(canonicalMatch.get());
         }
 
-        return merchantCatalog.findByAlias(normalizedMerchant)
+        return merchantAliasCatalog.findByNormalizedAlias(normalizedMerchant)
+                .map(MerchantAliasRecord::merchantId)
+                .flatMap(merchantCatalog::findById)
                 .map(this::toExactMatch)
                 .orElseGet(MerchantMatch::notMatched);
     }

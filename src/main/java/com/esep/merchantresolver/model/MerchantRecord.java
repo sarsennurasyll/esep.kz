@@ -1,17 +1,10 @@
 package com.esep.merchantresolver.model;
 
-import java.util.Set;
-
 /**
- * Неизменяемая запись известного продавца и его вариантов названий.
+ * Неизменяемая запись известного продавца.
  */
 public record MerchantRecord(
         String id,
-        String canonicalName,
-        Set<String> aliases
+        String canonicalName
 ) {
-
-    public MerchantRecord {
-        aliases = Set.copyOf(aliases);
-    }
 }
