@@ -5,7 +5,6 @@ import com.esep.statementimport.model.ParsedStatement;
 import com.esep.statementimport.pdf.PdfTextExtractor;
 
 import java.io.InputStream;
-import java.util.List;
 
 /**
  * Начальная реализация парсера выписки Kaspi с поиском сырых строк операций.
@@ -14,14 +13,20 @@ public class KaspiStatementParser implements StatementParser {
 
     private final PdfTextExtractor pdfTextExtractor;
     private final KaspiTransactionExtractor transactionExtractor;
+    private final KaspiTransactionParser transactionParser;
 
     public KaspiStatementParser(PdfTextExtractor pdfTextExtractor) {
-        this(pdfTextExtractor, new KaspiTransactionExtractor());
+        this(pdfTextExtractor, new KaspiTransactionExtractor(), new KaspiTransactionParser());
     }
 
-    KaspiStatementParser(PdfTextExtractor pdfTextExtractor, KaspiTransactionExtractor transactionExtractor) {
+    KaspiStatementParser(
+            PdfTextExtractor pdfTextExtractor,
+            KaspiTransactionExtractor transactionExtractor,
+            KaspiTransactionParser transactionParser
+    ) {
         this.pdfTextExtractor = pdfTextExtractor;
         this.transactionExtractor = transactionExtractor;
+        this.transactionParser = transactionParser;
     }
 
     @Override
@@ -29,6 +34,11 @@ public class KaspiStatementParser implements StatementParser {
         String statementText = pdfTextExtractor.extract(input);
         RawStatement rawStatement = transactionExtractor.extract(statementText);
 
-        return new ParsedStatement(null, null, null, List.of());
+        return new ParsedStatement(
+                null,
+                null,
+                null,
+                rawStatement.transactionLines().stream().map(transactionParser::parse).toList()
+        );
     }
 }
