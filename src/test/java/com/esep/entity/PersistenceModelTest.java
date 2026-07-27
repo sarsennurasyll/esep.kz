@@ -54,4 +54,18 @@ class PersistenceModelTest {
 
         assertThat(transaction.getTransactionDate()).isEqualTo(LocalDate.of(2026, 7, 12));
     }
+
+    @Test
+    void shouldMarkNewMerchantAliasAsVerifiedByDefault() {
+        MerchantAlias merchantAlias = MerchantAlias.builder()
+                .aliasName("MAGNUM")
+                .normalizedAlias("MAGNUM")
+                .merchant(Merchant.builder()
+                        .originalName("MAGNUM")
+                        .normalizedName("MAGNUM")
+                        .build())
+                .build();
+
+        assertThat(merchantAlias.isVerified()).isTrue();
+    }
 }

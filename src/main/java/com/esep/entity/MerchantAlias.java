@@ -60,6 +60,10 @@ public class MerchantAlias {
     @JoinColumn(name = "merchant_id", nullable = false)
     private Merchant merchant;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean verified = true;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;

@@ -1,0 +1,2 @@
+ALTER TABLE merchant_aliases
+    ADD COLUMN verified BOOLEAN NOT NULL DEFAULT TRUE;
