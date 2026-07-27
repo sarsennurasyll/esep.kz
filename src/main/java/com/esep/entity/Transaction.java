@@ -23,7 +23,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 
 /**
  * Операция, извлечённая из банковской выписки.
@@ -58,7 +58,12 @@ public class Transaction {
 
     @NotNull
     @Column(nullable = false)
-    private LocalDateTime transactionDate;
+    private LocalDate transactionDate;
+
+    @NotBlank
+    @Size(min = 64, max = 64)
+    @Column(nullable = false, length = 64, updatable = false)
+    private String sourceTransactionFingerprint;
 
     @NotBlank
     @Size(max = 1_000)

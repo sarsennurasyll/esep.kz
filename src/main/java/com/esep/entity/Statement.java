@@ -52,6 +52,15 @@ public class Statement {
     @Column(nullable = false, length = 255)
     private String originalFileName;
 
+    @Size(max = 34)
+    @Column(length = 34)
+    private String accountNumber;
+
+    @NotBlank
+    @Size(min = 64, max = 64)
+    @Column(nullable = false, unique = true, length = 64, updatable = false)
+    private String sourceFileHash;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant uploadedAt;

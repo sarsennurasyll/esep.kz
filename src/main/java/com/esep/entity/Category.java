@@ -32,6 +32,11 @@ public class Category {
     private Long id;
 
     @NotBlank
+    @Size(max = 50)
+    @Column(nullable = false, unique = true, length = 50)
+    private String code;
+
+    @NotBlank
     @Size(max = 100)
     @Column(nullable = false, unique = true, length = 100)
     private String name;
