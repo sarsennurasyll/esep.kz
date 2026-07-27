@@ -16,12 +16,20 @@ import java.util.regex.Pattern;
 class KaspiTransactionParser {
 
     private static final String DEFAULT_CURRENCY = "KZT";
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.uuuu");
-    private static final Pattern TRANSACTION_LINE = Pattern.compile(
+    private static final DateTimeFormatter FULL_YEAR_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.uuuu");
+    private static final DateTimeFormatter SHORT_YEAR_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.uu");
+    private static final Pattern NORMALIZED_TRANSACTION_LINE = Pattern.compile(
             "^(?<date>\\d{2}\\.\\d{2}\\.\\d{4})\\s+"
                     + "(?<description>.+?)\\s+"
-                    + "(?<amount>[+-]?(?:\\d{1,3}(?:\\s\\d{3})*|\\d+)(?:[.,]\\d+)?)"
+                    + "(?<amount>[+-]?\\s?(?:\\d{1,3}(?:\\s\\d{3})*|\\d+)(?:[.,]\\d+)?)"
                     + "(?:\\s+(?<currency>[A-Za-z]{3}))?$"
+    );
+    private static final Pattern KASPI_TRANSACTION_LINE = Pattern.compile(
+            "^(?<date>\\d{2}\\.\\d{2}\\.\\d{2})\\s+"
+                    + "(?<amount>[+-]?\\s?(?:\\d{1,3}(?:\\s\\d{3})*|\\d+)(?:[.,]\\d+)?)"
+                    + "(?:\\s+(?:[^\\p{L}\\p{N}\\s]+|[A-Za-z]{3}))?"
+                    + "\\s+(?:Покупка|Пополнение|Перевод)\\s+"
+                    + "(?<description>.+)$"
     );
 
     ParsedTransaction parse(String rawLine) {
@@ -29,20 +37,38 @@ class KaspiTransactionParser {
             throw new IllegalArgumentException("Строка операции не должна быть null.");
         }
 
-        Matcher matcher = TRANSACTION_LINE.matcher(rawLine.strip());
-        if (!matcher.matches()) {
-            throw new IllegalArgumentException("Некорректный формат строки операции: " + rawLine);
+        String normalizedLine = rawLine.strip();
+        Matcher normalizedMatcher = NORMALIZED_TRANSACTION_LINE.matcher(normalizedLine);
+        if (normalizedMatcher.matches()) {
+            return createTransaction(
+                    normalizedMatcher,
+                    FULL_YEAR_DATE_FORMATTER,
+                    normalizedMatcher.group("currency")
+            );
         }
 
+        Matcher kaspiMatcher = KASPI_TRANSACTION_LINE.matcher(normalizedLine);
+        if (kaspiMatcher.matches()) {
+            return createTransaction(kaspiMatcher, SHORT_YEAR_DATE_FORMATTER, null);
+        }
+
+        throw new IllegalArgumentException("Некорректный формат строки операции: " + rawLine);
+    }
+
+    private ParsedTransaction createTransaction(
+            Matcher matcher,
+            DateTimeFormatter dateFormatter,
+            String currency
+    ) {
         try {
-            LocalDate date = LocalDate.parse(matcher.group("date"), DATE_FORMATTER);
+            LocalDate date = LocalDate.parse(matcher.group("date"), dateFormatter);
             String description = matcher.group("description");
             BigDecimal amount = new BigDecimal(normalizeAmount(matcher.group("amount")));
-            String currency = resolveCurrency(matcher.group("currency"));
+            String resolvedCurrency = resolveCurrency(currency);
 
-            return new ParsedTransaction(date, description, amount, currency);
+            return new ParsedTransaction(date, description, amount, resolvedCurrency);
         } catch (DateTimeParseException exception) {
-            throw new IllegalArgumentException("Некорректная дата операции: " + rawLine, exception);
+            throw new IllegalArgumentException("Некорректная дата операции: " + matcher.group("date"), exception);
         }
     }
 

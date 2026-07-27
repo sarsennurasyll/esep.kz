@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -59,7 +60,7 @@ class KaspiImportPipelineIntegrationTest {
 
     private void assertRecognizedIfPresent(ParsedStatement statement, String marker) {
         statement.transactions().stream()
-                .filter(transaction -> transaction.description().contains(marker))
+                .filter(transaction -> transaction.description().toUpperCase(Locale.ROOT).contains(marker))
                 .findFirst()
                 .ifPresent(transaction -> assertThat(
                         recognitionService.recognize(transaction.description()).merchantMatch().matched()

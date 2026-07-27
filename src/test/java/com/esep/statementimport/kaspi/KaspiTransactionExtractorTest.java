@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,6 +38,22 @@ class KaspiTransactionExtractorTest {
     }
 
     @Test
+    void shouldExtractOperationLinesWithShortYearFromKaspiText() {
+        String statementText = """
+                Дата Сумма Операция Детали
+                26.07.26 - 4 670,00 ? Покупка YANDEX.GO
+                26.07.26 + 2 270,00 ? Пополнение Балауса А.
+                """;
+
+        RawStatement rawStatement = transactionExtractor.extract(statementText);
+
+        assertThat(rawStatement.transactionLines()).containsExactly(
+                "26.07.26 - 4 670,00 ? Покупка YANDEX.GO",
+                "26.07.26 + 2 270,00 ? Пополнение Балауса А."
+        );
+    }
+
+    @Test
     @EnabledIfSystemProperty(named = "kaspi.pdf.path", matches = ".+")
     void shouldExtractKnownOperationsFromKaspiStatement() throws IOException {
         Path statementPath = Path.of(System.getProperty("kaspi.pdf.path"));
@@ -45,8 +62,10 @@ class KaspiTransactionExtractorTest {
             RawStatement rawStatement = transactionExtractor.extract(pdfTextExtractor.extract(input));
 
             assertThat(rawStatement.transactionLines()).isNotEmpty();
-            assertThat(rawStatement.transactionLines()).anyMatch(line -> line.contains("MAGNUM"));
-            assertThat(rawStatement.transactionLines()).anyMatch(line -> line.contains("YANDEX"));
+            assertThat(rawStatement.transactionLines())
+                    .anyMatch(line -> line.toUpperCase(Locale.ROOT).contains("MAGNUM"));
+            assertThat(rawStatement.transactionLines())
+                    .anyMatch(line -> line.toUpperCase(Locale.ROOT).contains("YANDEX"));
         }
     }
 }

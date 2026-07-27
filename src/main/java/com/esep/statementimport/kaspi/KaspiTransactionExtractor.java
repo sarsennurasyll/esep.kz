@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
  */
 class KaspiTransactionExtractor {
 
-    private static final Pattern OPERATION_LINE = Pattern.compile("^\\d{2}\\.\\d{2}\\.\\d{4}\\s+.+$");
+    private static final Pattern OPERATION_LINE = Pattern.compile("^\\d{2}\\.\\d{2}\\.(?:\\d{2}|\\d{4})\\s+.+$");
     private static final List<String> OPERATION_SECTION_MARKERS = List.of("ОПЕРАЦ", "TRANSACTION");
 
     RawStatement extract(String statementText) {

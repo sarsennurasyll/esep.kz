@@ -49,6 +49,16 @@ class KaspiTransactionParserTest {
     }
 
     @Test
+    void shouldParseKaspiPdfOperationLine() {
+        var transaction = transactionParser.parse("26.07.26 - 4 670,00 ? Покупка YANDEX.GO");
+
+        assertThat(transaction.date()).isEqualTo(LocalDate.of(2026, 7, 26));
+        assertThat(transaction.description()).isEqualTo("YANDEX.GO");
+        assertThat(transaction.amount()).isEqualByComparingTo(new BigDecimal("-4670.00"));
+        assertThat(transaction.currency()).isEqualTo("KZT");
+    }
+
+    @Test
     void shouldRejectInvalidTransactionLine() {
         assertThatThrownBy(() -> transactionParser.parse("MAGNUM -14500"))
                 .isInstanceOf(IllegalArgumentException.class);
