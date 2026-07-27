@@ -4,8 +4,8 @@ import com.esep.merchantrecognition.interfaces.MerchantRecognitionService;
 import com.esep.statementimport.interfaces.StatementImporter;
 import com.esep.statementimport.model.ImportResult;
 import com.esep.statementimport.model.ParsedStatement;
-import com.esep.statementimport.model.ParsedTransaction;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -13,33 +13,35 @@ import java.util.Objects;
  */
 public class DefaultStatementImporter implements StatementImporter {
 
-    private final MerchantRecognitionService merchantRecognitionService;
+    private final TransactionImportProcessor transactionImportProcessor;
 
     public DefaultStatementImporter(MerchantRecognitionService merchantRecognitionService) {
-        this.merchantRecognitionService = merchantRecognitionService;
+        this(new TransactionImportProcessor(merchantRecognitionService));
+    }
+
+    DefaultStatementImporter(TransactionImportProcessor transactionImportProcessor) {
+        this.transactionImportProcessor = transactionImportProcessor;
     }
 
     @Override
     public ImportResult importStatement(ParsedStatement statement) {
         Objects.requireNonNull(statement, "Statement must not be null");
 
-        int recognizedMerchants = 0;
-        int unknownMerchants = 0;
+        List<ProcessedTransaction> processedTransactions = statement.transactions().stream()
+                .map(transactionImportProcessor::process)
+                .toList();
 
-        for (ParsedTransaction transaction : statement.transactions()) {
-            boolean matched = merchantRecognitionService.recognize(transaction.description())
-                    .merchantMatch()
-                    .matched();
+        return createImportResult(processedTransactions);
+    }
 
-            if (matched) {
-                recognizedMerchants++;
-            } else {
-                unknownMerchants++;
-            }
-        }
+    ImportResult createImportResult(List<ProcessedTransaction> processedTransactions) {
+        int recognizedMerchants = (int) processedTransactions.stream()
+                .filter(transaction -> transaction.merchantRecognition().merchantMatch().matched())
+                .count();
+        int unknownMerchants = processedTransactions.size() - recognizedMerchants;
 
         return new ImportResult(
-                statement.transactions().size(),
+                processedTransactions.size(),
                 recognizedMerchants,
                 unknownMerchants
         );
