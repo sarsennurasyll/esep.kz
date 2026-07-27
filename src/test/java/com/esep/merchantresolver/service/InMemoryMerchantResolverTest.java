@@ -30,7 +30,8 @@ class InMemoryMerchantResolverTest {
         assertThat(result.exactMatch()).isTrue();
         assertThat(result.confidence()).isEqualTo(1.0);
         assertThat(result.displayName()).isEqualTo(expectedDisplayName);
-        assertThat(result.merchantId()).isNotBlank();
+        assertThat(result.merchantReference()).isNotNull();
+        assertThat(result.merchantReference().value()).isNotBlank();
     }
 
     @Test
@@ -40,7 +41,7 @@ class InMemoryMerchantResolverTest {
         assertThat(result.matched()).isFalse();
         assertThat(result.exactMatch()).isFalse();
         assertThat(result.confidence()).isZero();
-        assertThat(result.merchantId()).isNull();
+        assertThat(result.merchantReference()).isNull();
         assertThat(result.displayName()).isNull();
     }
 

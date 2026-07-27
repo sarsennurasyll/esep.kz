@@ -4,7 +4,7 @@ package com.esep.merchantresolver.model;
  * Неизменяемый результат поиска продавца.
  */
 public record MerchantMatch(
-        String merchantId,
+        MerchantReference merchantReference,
         String displayName,
         double confidence,
         boolean matched,
@@ -12,12 +12,12 @@ public record MerchantMatch(
 ) {
 
     public static MerchantMatch matched(
-            String merchantId,
+            MerchantReference merchantReference,
             String displayName,
             double confidence,
             boolean exactMatch
     ) {
-        return new MerchantMatch(merchantId, displayName, confidence, true, exactMatch);
+        return new MerchantMatch(merchantReference, displayName, confidence, true, exactMatch);
     }
 
     public static MerchantMatch notMatched() {

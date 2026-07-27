@@ -76,6 +76,62 @@ Examples of future features include statement import, merchant knowledge, transa
 - Do not implement AI, PDF parsing, APIs, persistence operations, or CRUD unless explicitly requested.
 - Keep business rules deterministic and testable before introducing AI assistance.
 
+## Development Rules
+
+- Analyze the existing architecture before changing code.
+- Do not create duplicate entities, DTOs, or services without a clear need.
+- Do not change public contracts without a strong architectural reason.
+- Follow accepted ADRs and the existing architecture.
+- Do not add dependencies unless they are necessary for the requested scope.
+- Write code, comments, and documentation naturally and clearly, without AI-style wording.
+
+## Verification
+
+Consider a task complete only after all of the following are done:
+
+1. Run the full test suite with `mvn test`.
+2. Confirm that every test passes.
+3. Check `git status`.
+4. Create a commit.
+5. Run `git push`.
+
+If `git push` requires confirmation or cannot be completed, stop and report the blocker.
+
+## Commit Format
+
+Use Conventional Commits. The type is in English and the description is in Russian.
+
+Allowed types include:
+
+- `feat`
+- `fix`
+- `docs`
+- `refactor`
+- `test`
+- `chore`
+
+Examples:
+
+```bash
+git commit -m "feat: добавлена поддержка реального формата Kaspi PDF"
+git commit -m "fix: исправлен импорт банковской выписки"
+git commit -m "docs: добавлен ADR архитектуры persistence"
+```
+
+## Task Completion Report
+
+After each completed task, report:
+
+- changed files;
+- total test count;
+- failures;
+- errors;
+- skipped tests;
+- `BUILD SUCCESS` or `BUILD FAILURE`;
+- commit hash;
+- commit message;
+- a brief `git push` result.
+
 ## Merchant Recognition Decision Priority
 
 All merchant recognition decisions must follow this priority order:

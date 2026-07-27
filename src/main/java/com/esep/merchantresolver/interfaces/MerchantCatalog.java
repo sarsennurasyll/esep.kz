@@ -1,6 +1,7 @@
 package com.esep.merchantresolver.interfaces;
 
 import com.esep.merchantresolver.model.MerchantRecord;
+import com.esep.merchantresolver.model.MerchantReference;
 
 import java.util.Optional;
 
@@ -11,5 +12,5 @@ public interface MerchantCatalog {
 
     Optional<MerchantRecord> findByCanonicalName(String normalizedMerchant);
 
-    Optional<MerchantRecord> findById(String merchantId);
+    Optional<MerchantRecord> findByReference(MerchantReference merchantReference);
 }

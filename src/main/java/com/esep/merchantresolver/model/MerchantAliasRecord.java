@@ -5,7 +5,7 @@ package com.esep.merchantresolver.model;
  */
 public record MerchantAliasRecord(
         String id,
-        String merchantId,
+        MerchantReference merchantReference,
         String alias,
         String normalizedAlias,
         boolean verified

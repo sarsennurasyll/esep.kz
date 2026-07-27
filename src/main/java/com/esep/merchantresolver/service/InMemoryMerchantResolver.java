@@ -34,15 +34,15 @@ public class InMemoryMerchantResolver implements MerchantResolver {
         }
 
         return merchantAliasCatalog.findByNormalizedAlias(normalizedMerchant)
-                .map(MerchantAliasRecord::merchantId)
-                .flatMap(merchantCatalog::findById)
+                .map(MerchantAliasRecord::merchantReference)
+                .flatMap(merchantCatalog::findByReference)
                 .map(this::toExactMatch)
                 .orElseGet(MerchantMatch::notMatched);
     }
 
     private MerchantMatch toExactMatch(MerchantRecord merchantRecord) {
         return MerchantMatch.matched(
-                merchantRecord.id(),
+                merchantRecord.merchantReference(),
                 merchantRecord.canonicalName(),
                 1.0,
                 true

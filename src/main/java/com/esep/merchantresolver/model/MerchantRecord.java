@@ -4,7 +4,7 @@ package com.esep.merchantresolver.model;
  * Неизменяемая запись известного продавца.
  */
 public record MerchantRecord(
-        String id,
+        MerchantReference merchantReference,
         String canonicalName
 ) {
 }

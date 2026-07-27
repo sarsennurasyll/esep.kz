@@ -48,7 +48,7 @@ JPA-сущность `Merchant` использует технический prim
 
 Финальный прикладной контракт — непрозрачный value object `MerchantReference`. `MerchantResolver` возвращает эту ссылку только для распознанного продавца; потребители не интерпретируют её значение и не строят поиск по `displayName`. `MerchantCatalog` принимает `MerchantReference` и возвращает продавца в своей модели.
 
-In-memory адаптер сопоставляет `MerchantReference` со строковым ID записи. PostgreSQL/JPA адаптер сопоставляет ту же непрозрачную ссылку с `Merchant.id`, не раскрывая тип primary key за пределами adapter boundary. Текущий `String merchantId` в `MerchantMatch` будет заменён на этот контракт в отдельной подготовительной задаче перед persistence-портами.
+In-memory адаптер сопоставляет `MerchantReference` со строковым ID записи. PostgreSQL/JPA адаптер сопоставляет ту же непрозрачную ссылку с `Merchant.id`, не раскрывая тип primary key за пределами adapter boundary. Строковый ID в `MerchantMatch` заменён на этот контракт подготовительной задачей перед persistence-портами.
 
 ### Стратегия хранения Category
 
