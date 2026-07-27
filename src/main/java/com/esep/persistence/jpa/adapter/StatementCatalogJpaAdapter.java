@@ -29,7 +29,7 @@ public class StatementCatalogJpaAdapter implements StatementCatalog {
     }
 
     @Override
-    public void save(StatementPersistenceCommand statement) {
-        statementJpaRepository.save(statementJpaMapper.toEntity(statement));
+    public Long save(StatementPersistenceCommand statement) {
+        return statementJpaRepository.save(statementJpaMapper.toEntity(statement)).getId();
     }
 }

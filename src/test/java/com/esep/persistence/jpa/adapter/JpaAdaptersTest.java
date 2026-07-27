@@ -39,8 +39,11 @@ class JpaAdaptersTest {
         StatementJpaRepository repository = mock(StatementJpaRepository.class);
         StatementCatalogJpaAdapter adapter = new StatementCatalogJpaAdapter(repository, new StatementJpaMapper());
         StatementPersistenceCommand command = statementCommand();
+        Statement savedStatement = statementEntity();
+        savedStatement.setId(1L);
+        when(repository.save(any(Statement.class))).thenReturn(savedStatement);
 
-        adapter.save(command);
+        assertThat(adapter.save(command)).isEqualTo(1L);
 
         verify(repository).save(any(Statement.class));
         when(repository.existsBySourceFileHash(command.sourceFileHash())).thenReturn(true);

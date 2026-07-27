@@ -11,9 +11,9 @@ import com.esep.persistence.model.StatementPersistenceCommand;
 import com.esep.persistence.model.TransactionPersistenceCommand;
 import com.esep.statementimport.exception.StatementAlreadyImportedException;
 import com.esep.statementimport.interfaces.StatementParser;
-import com.esep.statementimport.model.ImportResult;
 import com.esep.statementimport.model.ParsedStatement;
 import com.esep.statementimport.model.ParsedTransaction;
+import com.esep.statementimport.model.StatementImportResult;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -58,15 +58,16 @@ class DefaultStatementImportUseCaseTest {
                 transactionCatalog
         );
 
-        ImportResult result = useCase.importStatement(
+        StatementImportResult result = useCase.importStatement(
                 new ByteArrayInputStream("source".getBytes()),
                 BankType.KASPI,
                 "statement.pdf"
         );
 
-        assertThat(result.totalTransactions()).isEqualTo(2);
-        assertThat(result.recognizedMerchants()).isEqualTo(1);
-        assertThat(result.unknownMerchants()).isEqualTo(1);
+        assertThat(result.statementId()).isEqualTo(1L);
+        assertThat(result.operationsTotal()).isEqualTo(2);
+        assertThat(result.recognizedOperations()).isEqualTo(1);
+        assertThat(result.unknownOperations()).isEqualTo(1);
         assertThat(statementCatalog.savedStatement.maskedAccountNumber()).isEqualTo("****5678");
         assertThat(statementCatalog.savedStatement.periodFrom()).isEqualTo(LocalDate.of(2026, 7, 12));
         assertThat(statementCatalog.savedStatement.periodTo()).isEqualTo(LocalDate.of(2026, 7, 13));
@@ -147,8 +148,9 @@ class DefaultStatementImportUseCaseTest {
         }
 
         @Override
-        public void save(StatementPersistenceCommand statement) {
+        public Long save(StatementPersistenceCommand statement) {
             savedStatement = statement;
+            return 1L;
         }
     }
 

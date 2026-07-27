@@ -9,5 +9,5 @@ public interface StatementCatalog {
 
     boolean existsBySourceFileHash(String sourceFileHash);
 
-    void save(StatementPersistenceCommand statement);
+    Long save(StatementPersistenceCommand statement);
 }

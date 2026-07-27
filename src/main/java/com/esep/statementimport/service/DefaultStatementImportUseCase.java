@@ -10,6 +10,7 @@ import com.esep.statementimport.exception.StatementAlreadyImportedException;
 import com.esep.statementimport.interfaces.StatementParser;
 import com.esep.statementimport.model.ImportResult;
 import com.esep.statementimport.model.ParsedStatement;
+import com.esep.statementimport.model.StatementImportResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.ByteArrayInputStream;
@@ -51,7 +52,7 @@ public class DefaultStatementImportUseCase {
     }
 
     @Transactional
-    public ImportResult importStatement(InputStream input, BankType bankType, String originalFileName) {
+    public StatementImportResult importStatement(InputStream input, BankType bankType, String originalFileName) {
         byte[] sourceFile = readSourceFile(input);
         String sourceFileHash = calculateSourceFileHash(sourceFile);
 
@@ -65,7 +66,7 @@ public class DefaultStatementImportUseCase {
                 .map(transactionImportProcessor::process)
                 .toList();
 
-        statementCatalog.save(toStatementCommand(
+        Long statementId = statementCatalog.save(toStatementCommand(
                 parsedStatement,
                 statementPeriod,
                 bankType,
@@ -79,7 +80,15 @@ public class DefaultStatementImportUseCase {
                         .toList()
         );
 
-        return statementImporter.createImportResult(processedTransactions);
+        ImportResult importResult = statementImporter.createImportResult(processedTransactions);
+        return new StatementImportResult(
+                statementId,
+                importResult.totalTransactions(),
+                importResult.recognizedMerchants(),
+                importResult.unknownMerchants(),
+                statementPeriod.periodFrom(),
+                statementPeriod.periodTo()
+        );
     }
 
     private StatementPersistenceCommand toStatementCommand(

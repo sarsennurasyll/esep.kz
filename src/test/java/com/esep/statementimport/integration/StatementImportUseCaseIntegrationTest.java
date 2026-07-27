@@ -48,11 +48,11 @@ class StatementImportUseCaseIntegrationTest {
         try (InputStream input = Files.newInputStream(statementPath)) {
             var result = useCase.importStatement(input, BankType.KASPI, statementPath.getFileName().toString());
 
-            assertThat(result.totalTransactions()).isPositive();
-            assertThat(transactionCatalog.transactions).hasSize(result.totalTransactions());
+            assertThat(result.operationsTotal()).isPositive();
+            assertThat(transactionCatalog.transactions).hasSize(result.operationsTotal());
             assertThat(statementCatalog.statement.periodFrom()).isNotNull();
             assertThat(statementCatalog.statement.periodTo()).isNotNull();
-            assertThat(result.recognizedMerchants()).isPositive();
+            assertThat(result.recognizedOperations()).isPositive();
         }
     }
 
@@ -97,8 +97,9 @@ class StatementImportUseCaseIntegrationTest {
         }
 
         @Override
-        public void save(StatementPersistenceCommand statement) {
+        public Long save(StatementPersistenceCommand statement) {
             this.statement = statement;
+            return 1L;
         }
     }
 
