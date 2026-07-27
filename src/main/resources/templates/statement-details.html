@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Выписка')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navigation}"></nav>
+<main class="container pb-5">
+    <a class="text-decoration-none" th:href="@{/statements}">← Все выписки</a>
+    <div class="card statement-card my-3"><div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-3"><span class="text-secondary d-block small">Банк</span><strong th:text="${statement.bank}">KASPI</strong></div>
+            <div class="col-md-3"><span class="text-secondary d-block small">Период</span><strong th:text="${statement.periodFrom} + ' — ' + ${statement.periodTo}"></strong></div>
+            <div class="col-md-3"><span class="text-secondary d-block small">Операций</span><strong th:text="${statement.transactionCount}"></strong></div>
+            <div class="col-md-3"><span class="text-secondary d-block small">Импортирована</span><strong th:text="${#temporals.format(statement.importedAt, 'dd.MM.yyyy HH:mm')}"></strong></div>
+        </div>
+    </div></div>
+    <h1 class="h3 mt-4 mb-3">Операции</h1>
+    <div class="card statement-card"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Дата</th><th>Описание</th><th>Merchant</th><th>Категория</th><th class="text-end">Сумма</th><th>Валюта</th><th>Тип</th></tr></thead>
+        <tbody>
+        <tr th:each="transaction : ${transactions}">
+            <td th:text="${transaction.date}"></td>
+            <td th:text="${transaction.description}"></td>
+            <td th:text="${transaction.merchant ?: 'Не распознан'}"></td>
+            <td><span class="badge text-bg-light border" th:text="${transaction.category}"></span></td>
+            <td class="text-end fw-semibold" th:classappend="${transaction.amount.signum() < 0 ? ' amount-expense' : ' amount-income'}" th:text="${transaction.amount}"></td>
+            <td th:text="${transaction.currency}"></td>
+            <td th:text="${transaction.transactionType}"></td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(transactions)}"><td colspan="7" class="text-center text-secondary py-4">В этой выписке нет операций.</td></tr>
+        </tbody>
+    </table></div></div>
+</main>
+</body>
+</html>

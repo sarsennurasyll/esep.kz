@@ -13,7 +13,10 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 /**
  * Преобразует ошибки импорта в HTTP-ответы API.
  */
-@RestControllerAdvice
+@RestControllerAdvice(assignableTypes = {
+        StatementImportController.class,
+        StatementQueryController.class
+})
 public class StatementImportExceptionHandler {
 
     @ExceptionHandler(StatementAlreadyImportedException.class)

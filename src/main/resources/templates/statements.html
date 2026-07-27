@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Выписки')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navigation}"></nav>
+<main class="container pb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div><h1 class="h3 mb-1">Импортированные выписки</h1><p class="text-secondary mb-0">История обработки банковских выписок.</p></div>
+        <a class="btn btn-primary" th:href="@{/import}">Импортировать</a>
+    </div>
+    <div th:if="${#lists.isEmpty(statements)}" class="alert alert-light border">Выписок пока нет.</div>
+    <div th:unless="${#lists.isEmpty(statements)}" class="card statement-card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead><tr><th>Банк</th><th>Период</th><th>Операций</th><th>Дата импорта</th></tr></thead>
+                <tbody>
+                <tr th:each="statement : ${statements}">
+                    <td><a class="table-link d-block" th:href="@{/statements/{id}(id=${statement.id})}" th:text="${statement.bank}">KASPI</a></td>
+                    <td th:text="${statement.periodFrom} + ' — ' + ${statement.periodTo}"></td>
+                    <td th:text="${statement.transactionCount}"></td>
+                    <td th:text="${#temporals.format(statement.importedAt, 'dd.MM.yyyy HH:mm')}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

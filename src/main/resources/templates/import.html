@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Импорт выписки')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navigation}"></nav>
+<main class="container pb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card import-card">
+                <div class="card-body p-4 p-md-5">
+                    <h1 class="h3 mb-2">Импорт выписки Kaspi</h1>
+                    <p class="text-secondary">Выберите обезличенную или личную PDF-выписку Kaspi. Файл будет обработан и сохранён в Esep.</p>
+                    <div th:if="${importError}" class="alert alert-danger" th:text="${importError}"></div>
+                    <form th:action="@{/import}" method="post" enctype="multipart/form-data">
+                        <div class="mb-4">
+                            <label for="file" class="form-label">PDF-выписка</label>
+                            <input id="file" name="file" class="form-control" type="file" accept="application/pdf,.pdf" required>
+                        </div>
+                        <button class="btn btn-primary" type="submit">Импортировать</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>
