@@ -3,6 +3,7 @@ package com.esep.merchantmanagement.api;
 import com.esep.common.api.ApiErrorResponse;
 import com.esep.merchantmanagement.exception.MerchantAliasAlreadyExistsException;
 import com.esep.merchantmanagement.exception.MerchantNotFoundException;
+import com.esep.merchantmanagement.exception.MerchantDeletionNotAllowedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -11,7 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 /**
  * Преобразует ошибки управления продавцами в ответы HTTP API.
  */
-@RestControllerAdvice(assignableTypes = MerchantManagementController.class)
+@RestControllerAdvice(assignableTypes = {MerchantManagementController.class, KnowledgeBaseMerchantController.class})
 public class MerchantManagementExceptionHandler {
 
     @ExceptionHandler(MerchantNotFoundException.class)
@@ -21,6 +22,11 @@ public class MerchantManagementExceptionHandler {
 
     @ExceptionHandler(MerchantAliasAlreadyExistsException.class)
     ResponseEntity<ApiErrorResponse> handleAliasAlreadyExists(MerchantAliasAlreadyExistsException exception) {
+        return error(HttpStatus.CONFLICT, exception);
+    }
+
+    @ExceptionHandler(MerchantDeletionNotAllowedException.class)
+    ResponseEntity<ApiErrorResponse> handleMerchantDeletionNotAllowed(MerchantDeletionNotAllowedException exception) {
         return error(HttpStatus.CONFLICT, exception);
     }
 

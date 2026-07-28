@@ -3,6 +3,7 @@ package com.esep.merchantmanagement.service;
 import com.esep.merchantmanagement.exception.MerchantAliasAlreadyExistsException;
 import com.esep.merchantmanagement.interfaces.MerchantAliasMatchCatalog;
 import com.esep.merchantmanagement.interfaces.MerchantReadQuery;
+import com.esep.merchantmanagement.interfaces.MerchantTransactionBindingCatalog;
 import com.esep.merchantmanagement.interfaces.UnknownMerchantDescriptionQuery;
 import com.esep.merchantmanagement.model.MerchantAliasMatchCommand;
 import com.esep.merchantmanagement.model.UnknownMerchantCandidate;
@@ -56,7 +57,11 @@ class DefaultMerchantManagementServiceTest {
                 .thenReturn(Optional.of(new MerchantRecord(merchantReference, "MAGNUM")));
         when(aliasCatalog.findByNormalizedAlias("UNKNOWN SHOP")).thenReturn(Optional.empty());
 
-        DefaultMerchantManagementService service = service(() -> List.of(), merchantCatalog, aliasCatalog, commandCatalog);
+        MerchantTransactionBindingCatalog bindingCatalog = mock(MerchantTransactionBindingCatalog.class);
+        DefaultMerchantManagementService service = service(
+                () -> List.of(new UnknownMerchantCandidate(" unknown shop ", 2)),
+                merchantCatalog, aliasCatalog, commandCatalog, bindingCatalog
+        );
         service.match(" unknown shop ", merchantReference);
 
         verify(commandCatalog).save(new MerchantAliasMatchCommand(
@@ -64,6 +69,7 @@ class DefaultMerchantManagementServiceTest {
                 "UNKNOWN SHOP",
                 merchantReference
         ));
+        verify(bindingCatalog).bindUnknownTransactions(List.of(" unknown shop "), merchantReference);
     }
 
     @Test
@@ -95,6 +101,24 @@ class DefaultMerchantManagementServiceTest {
                 merchantCatalog,
                 aliasCatalog,
                 commandCatalog,
+                new DefaultMerchantNormalizer()
+        );
+    }
+
+    private DefaultMerchantManagementService service(
+            UnknownMerchantDescriptionQuery unknownQuery,
+            MerchantCatalog merchantCatalog,
+            MerchantAliasCatalog aliasCatalog,
+            MerchantAliasMatchCatalog commandCatalog,
+            MerchantTransactionBindingCatalog bindingCatalog
+    ) {
+        return new DefaultMerchantManagementService(
+                unknownQuery,
+                List::of,
+                merchantCatalog,
+                aliasCatalog,
+                commandCatalog,
+                bindingCatalog,
                 new DefaultMerchantNormalizer()
         );
     }
