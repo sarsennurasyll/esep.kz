@@ -8,6 +8,8 @@ import com.esep.merchantmanagement.interfaces.MerchantReadQuery;
 import com.esep.merchantmanagement.interfaces.MerchantTransactionBindingCatalog;
 import com.esep.merchantmanagement.interfaces.UnknownMerchantDescriptionQuery;
 import com.esep.merchantmanagement.model.MerchantAliasMatchCommand;
+import com.esep.merchantmanagement.model.MerchantLearningStatistics;
+import com.esep.merchantmanagement.model.MerchantSuggestion;
 import com.esep.merchantmanagement.model.MerchantSummary;
 import com.esep.merchantmanagement.model.UnknownMerchantCandidate;
 import com.esep.merchantmanagement.model.UnknownMerchantDescription;
@@ -22,6 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 /**
  * Реализует прикладной сценарий подтверждения неизвестных описаний операций.
@@ -90,17 +94,24 @@ public class DefaultMerchantManagementService implements MerchantManagementServi
 
             descriptions.merge(
                     normalizedDescription,
-                    new UnknownMerchantDescription(normalizedDescription, candidate.usageCount(), candidate.description()),
+                    new UnknownMerchantDescription(normalizedDescription, candidate.usageCount(), candidate.totalAmount(),
+                            candidate.lastTransactionDate(), candidate.description(), candidate.newInLatestStatement(), suggestion(normalizedDescription)),
                     (current, next) -> new UnknownMerchantDescription(
                             current.normalizedDescription(),
                             current.usageCount() + next.usageCount(),
-                            current.exampleDescription()
+                            current.totalAmount().add(next.totalAmount()),
+                            current.lastTransactionDate().isAfter(next.lastTransactionDate()) ? current.lastTransactionDate() : next.lastTransactionDate(),
+                            current.exampleDescription(),
+                            current.newInLatestStatement() && next.newInLatestStatement(),
+                            current.suggestion()
                     )
             );
         }
 
         return descriptions.values().stream()
-                .sorted(java.util.Comparator.comparingLong(UnknownMerchantDescription::usageCount).reversed())
+                .sorted(java.util.Comparator.comparingLong(UnknownMerchantDescription::usageCount).reversed()
+                        .thenComparing(UnknownMerchantDescription::totalAmount, java.util.Comparator.reverseOrder())
+                        .thenComparing(UnknownMerchantDescription::lastTransactionDate, java.util.Comparator.reverseOrder()))
                 .toList();
     }
 
@@ -141,5 +152,28 @@ public class DefaultMerchantManagementService implements MerchantManagementServi
     private boolean isKnown(String normalizedDescription) {
         return merchantCatalog.findByCanonicalName(normalizedDescription).isPresent()
                 || merchantAliasCatalog.findByNormalizedAlias(normalizedDescription).isPresent();
+    }
+
+    private MerchantSuggestion suggestion(String normalizedDescription) {
+        return merchantReadQuery.findAll().stream()
+                .filter(merchant -> sharesMeaningfulToken(normalizedDescription, merchant.displayName())
+                        || merchant.aliases().stream().anyMatch(alias -> sharesMeaningfulToken(normalizedDescription, alias)))
+                .findFirst()
+                .map(merchant -> new MerchantSuggestion(merchant.merchantReference().value(), merchant.displayName(), merchant.categoryName()))
+                .orElse(null);
+    }
+
+    private boolean sharesMeaningfulToken(String description, String merchantName) {
+        for (String descriptionToken : description.split(" ")) {
+            if (descriptionToken.length() < 4) {
+                continue;
+            }
+            for (String merchantToken : merchantName.toUpperCase().split(" ")) {
+                if (descriptionToken.equals(merchantToken)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }

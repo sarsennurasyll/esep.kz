@@ -3,6 +3,7 @@ package com.esep.merchantmanagement.web;
 import com.esep.merchantmanagement.api.dto.MerchantMatchRequest;
 import com.esep.merchantmanagement.api.dto.MerchantResponse;
 import com.esep.merchantmanagement.api.dto.UnknownMerchantResponse;
+import com.esep.merchantmanagement.api.dto.MerchantLearningStatisticsResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -29,11 +30,20 @@ public class RestMerchantWebApiClient implements MerchantWebApiClient {
     }
 
     @Override
-    public List<UnknownMerchantResponse> findUnknownDescriptions() {
+    public List<UnknownMerchantResponse> findUnknownDescriptions(String query, boolean onlyNew, Long minUsageCount, java.math.BigDecimal minTotalAmount) {
         return Arrays.asList(execute(() -> restClient.get()
-                .uri("/unknown")
+                .uri(uriBuilder -> uriBuilder.path("/unknown")
+                        .queryParamIfPresent("query", optional(query))
+                        .queryParamIfPresent("minUsageCount", optional(minUsageCount))
+                        .queryParamIfPresent("minTotalAmount", optional(minTotalAmount))
+                        .queryParam("onlyNew", onlyNew)
+                        .build())
                 .retrieve()
                 .body(UnknownMerchantResponse[].class)));
+    }
+
+    private <T> java.util.Optional<T> optional(T value) {
+        return value == null || value instanceof String string && string.isBlank() ? java.util.Optional.empty() : java.util.Optional.of(value);
     }
 
     @Override
@@ -50,6 +60,11 @@ public class RestMerchantWebApiClient implements MerchantWebApiClient {
                 .body(request)
                 .retrieve()
                 .toBodilessEntity());
+    }
+
+    @Override
+    public MerchantLearningStatisticsResponse learningStatistics() {
+        return execute(() -> restClient.get().uri("/learning-statistics").retrieve().body(MerchantLearningStatisticsResponse.class));
     }
 
     private <T> T execute(ApiCall<T> call) {

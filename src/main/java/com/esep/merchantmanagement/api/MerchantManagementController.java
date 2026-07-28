@@ -4,6 +4,8 @@ import com.esep.merchantmanagement.api.dto.MerchantMatchRequest;
 import com.esep.merchantmanagement.api.dto.MerchantResponse;
 import com.esep.merchantmanagement.api.dto.UnknownMerchantResponse;
 import com.esep.merchantmanagement.interfaces.MerchantManagementService;
+import com.esep.merchantmanagement.interfaces.MerchantLearningStatisticsQuery;
+import com.esep.merchantmanagement.api.dto.MerchantLearningStatisticsResponse;
 import com.esep.merchantresolver.model.MerchantReference;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -14,6 +16,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,15 +31,32 @@ import java.util.List;
 public class MerchantManagementController {
 
     private final MerchantManagementService merchantManagementService;
+    private final MerchantLearningStatisticsQuery merchantLearningStatisticsQuery;
 
-    public MerchantManagementController(MerchantManagementService merchantManagementService) {
+    public MerchantManagementController(MerchantManagementService merchantManagementService,
+                                        MerchantLearningStatisticsQuery merchantLearningStatisticsQuery) {
         this.merchantManagementService = merchantManagementService;
+        this.merchantLearningStatisticsQuery = merchantLearningStatisticsQuery;
+    }
+
+    @GetMapping("/learning-statistics")
+    public MerchantLearningStatisticsResponse learningStatistics() {
+        return MerchantLearningStatisticsResponse.from(merchantLearningStatisticsQuery.getStatistics());
     }
 
     @GetMapping("/unknown")
     @Operation(summary = "Получить неизвестные описания операций")
-    public List<UnknownMerchantResponse> findUnknownDescriptions() {
+    public List<UnknownMerchantResponse> findUnknownDescriptions(
+            @RequestParam(required = false) String query,
+            @RequestParam(defaultValue = "false") boolean onlyNew,
+            @RequestParam(required = false) Long minUsageCount,
+            @RequestParam(required = false) java.math.BigDecimal minTotalAmount
+    ) {
         return merchantManagementService.findUnknownDescriptions().stream()
+                .filter(description -> query == null || query.isBlank() || description.normalizedDescription().contains(query.trim().toUpperCase()))
+                .filter(description -> !onlyNew || description.newInLatestStatement())
+                .filter(description -> minUsageCount == null || description.usageCount() >= minUsageCount)
+                .filter(description -> minTotalAmount == null || description.totalAmount().compareTo(minTotalAmount) >= 0)
                 .map(UnknownMerchantResponse::from)
                 .toList();
     }

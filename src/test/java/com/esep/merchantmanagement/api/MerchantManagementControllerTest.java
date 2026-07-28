@@ -1,6 +1,7 @@
 package com.esep.merchantmanagement.api;
 
 import com.esep.merchantmanagement.interfaces.MerchantManagementService;
+import com.esep.merchantmanagement.interfaces.MerchantLearningStatisticsQuery;
 import com.esep.merchantmanagement.model.MerchantSummary;
 import com.esep.merchantmanagement.model.UnknownMerchantDescription;
 import com.esep.merchantresolver.model.MerchantReference;
@@ -29,6 +30,9 @@ class MerchantManagementControllerTest {
 
     @MockitoBean
     private MerchantManagementService merchantManagementService;
+
+    @MockitoBean
+    private MerchantLearningStatisticsQuery merchantLearningStatisticsQuery;
 
     @Test
     void shouldReturnUnknownDescriptions() throws Exception {

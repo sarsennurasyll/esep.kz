@@ -8,4 +8,10 @@ public interface UnknownMerchantDescriptionProjection {
     String getDescription();
 
     long getUsageCount();
+
+    java.math.BigDecimal getTotalAmount();
+
+    java.time.LocalDate getLastTransactionDate();
+
+    boolean getNewInLatestStatement();
 }

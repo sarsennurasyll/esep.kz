@@ -2,6 +2,7 @@ package com.esep.merchantmanagement.web;
 
 import com.esep.merchantmanagement.api.dto.MerchantResponse;
 import com.esep.merchantmanagement.api.dto.UnknownMerchantResponse;
+import com.esep.merchantmanagement.api.dto.MerchantLearningStatisticsResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -31,12 +32,13 @@ class MerchantWebControllerTest {
 
     @Test
     void shouldRenderUnknownMerchantsPage() throws Exception {
-        when(merchantWebApiClient.findUnknownDescriptions()).thenReturn(List.of(
+        when(merchantWebApiClient.findUnknownDescriptions(null, false, null, null)).thenReturn(List.of(
                 new UnknownMerchantResponse("UNKNOWN SHOP", 2, "Unknown Shop")
         ));
         when(merchantWebApiClient.findMerchants()).thenReturn(List.of(
                 new MerchantResponse("42", "MAGNUM", "Продукты")
         ));
+        when(merchantWebApiClient.learningStatistics()).thenReturn(new MerchantLearningStatisticsResponse(1, 1, 1, 2, 3, 40));
 
         mockMvc.perform(get("/merchants"))
                 .andExpect(status().isOk())

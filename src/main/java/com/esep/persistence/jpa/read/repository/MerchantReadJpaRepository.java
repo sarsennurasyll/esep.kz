@@ -12,9 +12,10 @@ import java.util.List;
 public interface MerchantReadJpaRepository extends Repository<Merchant, Long> {
 
     @Query("""
-            select merchant
+            select distinct merchant
             from Merchant merchant
             left join fetch merchant.category
+            left join fetch merchant.aliases
             order by merchant.originalName asc
             """)
     List<Merchant> findAllForSelection();

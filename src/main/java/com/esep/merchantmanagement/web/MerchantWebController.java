@@ -23,9 +23,20 @@ public class MerchantWebController {
     }
 
     @GetMapping
-    public String merchants(Model model) {
-        model.addAttribute("unknownDescriptions", merchantWebApiClient.findUnknownDescriptions());
+    public String merchants(
+            @RequestParam(required = false) String query,
+            @RequestParam(defaultValue = "false") boolean onlyNew,
+            @RequestParam(required = false) Long minUsageCount,
+            @RequestParam(required = false) java.math.BigDecimal minTotalAmount,
+            Model model
+    ) {
+        model.addAttribute("unknownDescriptions", merchantWebApiClient.findUnknownDescriptions(query, onlyNew, minUsageCount, minTotalAmount));
         model.addAttribute("merchants", merchantWebApiClient.findMerchants());
+        model.addAttribute("learningStatistics", merchantWebApiClient.learningStatistics());
+        model.addAttribute("query", query);
+        model.addAttribute("onlyNew", onlyNew);
+        model.addAttribute("minUsageCount", minUsageCount);
+        model.addAttribute("minTotalAmount", minTotalAmount);
         return "merchants";
     }
 

@@ -22,7 +22,8 @@ public class UnknownMerchantDescriptionJpaAdapter implements UnknownMerchantDesc
     @Override
     public List<UnknownMerchantCandidate> findAll() {
         return unknownMerchantReadJpaRepository.findUnknownDescriptions().stream()
-                .map(result -> new UnknownMerchantCandidate(result.getDescription(), result.getUsageCount()))
+                .map(result -> new UnknownMerchantCandidate(result.getDescription(), result.getUsageCount(),
+                        result.getTotalAmount(), result.getLastTransactionDate(), result.getNewInLatestStatement()))
                 .toList();
     }
 }

@@ -1,47 +1,12 @@
 <!doctype html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
 <head th:replace="~{fragments/layout :: head('Неизвестные операции')}"></head>
-<body>
-<nav th:replace="~{fragments/layout :: navigation}"></nav>
+<body><nav th:replace="~{fragments/layout :: navigation}"></nav>
 <main class="container pb-5">
-    <div class="mb-4">
-        <h1 class="h3 mb-1">Неизвестные операции</h1>
-        <p class="text-secondary mb-0">Укажите известное место расхода для описания операции. Его категория поможет показать, куда ушли деньги; следующие импорты будут распознаны автоматически.</p>
-    </div>
-    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
-    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
-    <div th:if="${#lists.isEmpty(unknownDescriptions)}" class="alert alert-light border">
-        Все описания операций уже распознаны. Новые неизвестные операции появятся здесь после следующего импорта.
-    </div>
-    <div th:unless="${#lists.isEmpty(unknownDescriptions)}" class="card statement-card">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead><tr><th>Описание операции</th><th>Количество</th><th>Место расхода</th><th></th></tr></thead>
-                <tbody>
-                <tr th:each="description, stat : ${unknownDescriptions}">
-                    <td>
-                        <strong class="d-block" th:text="${description.normalizedDescription}"></strong>
-                        <span class="small text-secondary" th:text="${description.exampleDescription}"></span>
-                    </td>
-                    <td th:text="${description.usageCount}"></td>
-                    <td>
-                        <form class="d-flex gap-2" th:action="@{/merchants/match}" method="post">
-                            <input type="hidden" name="normalizedDescription" th:value="${description.normalizedDescription}">
-                            <label class="visually-hidden" th:for="${'merchant-' + stat.index}">Место расхода</label>
-                            <select class="form-select form-select-sm" name="merchantId" th:id="${'merchant-' + stat.index}" required>
-                                <option value="" selected disabled>Выберите место расхода</option>
-                                <option th:each="merchant : ${merchants}" th:value="${merchant.id}"
-                                        th:text="${merchant.displayName + ' — ' + merchant.categoryName}"></option>
-                            </select>
-                            <button class="btn btn-sm btn-primary text-nowrap" type="submit">Связать</button>
-                        </form>
-                    </td>
-                    <td></td>
-                </tr>
-                </tbody>
-            </table>
-        </div>
-    </div>
-</main>
-</body>
-</html>
+    <div class="mb-4"><h1 class="h3 mb-1">Неизвестные операции</h1><p class="text-secondary mb-0">Свяжите описание с получателем один раз — все совпадающие операции в истории и последующих импортах будут распознаны автоматически.</p></div>
+    <div class="row g-2 mb-4"><div class="col-6 col-md-2"><div class="card statement-card"><div class="card-body p-3"><small class="text-secondary">Merchant</small><div class="h5 mb-0" th:text="${learningStatistics.merchantCount}"></div></div></div></div><div class="col-6 col-md-2"><div class="card statement-card"><div class="card-body p-3"><small class="text-secondary">Alias</small><div class="h5 mb-0" th:text="${learningStatistics.aliasCount}"></div></div></div></div><div class="col-6 col-md-2"><div class="card statement-card"><div class="card-body p-3"><small class="text-secondary">Неизвестных</small><div class="h5 mb-0" th:text="${learningStatistics.unknownDescriptionCount}"></div></div></div></div><div class="col-6 col-md-3"><div class="card statement-card"><div class="card-body p-3"><small class="text-secondary">Распознано</small><div class="h5 mb-0" th:text="${learningStatistics.recognizedTransactionCount}"></div></div></div></div><div class="col-6 col-md-3"><div class="card statement-card"><div class="card-body p-3"><small class="text-secondary">Качество распознавания</small><div class="h5 mb-0" th:text="${#numbers.formatDecimal(learningStatistics.recognitionPercent, 1, 1) + '%'}"></div></div></div></div></div>
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div><div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+    <form class="card statement-card mb-3"><div class="card-body row g-2"><div class="col-md-4"><input class="form-control" name="query" th:value="${query}" placeholder="Поиск по описанию"></div><div class="col-md-2"><input class="form-control" type="number" min="1" name="minUsageCount" th:value="${minUsageCount}" placeholder="Мин. операций"></div><div class="col-md-3"><input class="form-control" type="number" min="0" step="0.01" name="minTotalAmount" th:value="${minTotalAmount}" placeholder="Мин. сумма, ₸"></div><div class="col-md-2 d-flex align-items-center"><div class="form-check"><input class="form-check-input" type="checkbox" name="onlyNew" value="true" th:checked="${onlyNew}" id="onlyNew"><label class="form-check-label" for="onlyNew">Только новые</label></div></div><div class="col-md-1"><button class="btn btn-outline-primary w-100" type="submit">Найти</button></div></div></form>
+    <div th:if="${#lists.isEmpty(unknownDescriptions)}" class="alert alert-light border">По заданным условиям неизвестные операции не найдены.</div>
+    <div th:unless="${#lists.isEmpty(unknownDescriptions)}" class="card statement-card"><div class="table-responsive"><table class="table table-hover align-middle mb-0"><thead><tr><th>Описание</th><th class="text-end">Операций</th><th class="text-end">Сумма</th><th>Последняя операция</th><th>Рекомендация</th><th>Связать с получателем</th></tr></thead><tbody><tr th:each="description, stat : ${unknownDescriptions}"><td><strong th:text="${description.normalizedDescription}"></strong><div class="small text-secondary" th:text="${description.exampleDescription}"></div><span th:if="${description.newInLatestStatement}" class="badge text-bg-info mt-1">Новая в последней выписке</span></td><td class="text-end" th:text="${description.usageCount}"></td><td class="text-end" th:text="${description.totalAmount}"></td><td th:text="${description.lastTransactionDate}"></td><td><span th:if="${description.suggestion}" th:text="${description.suggestion.displayName + ' — ' + description.suggestion.categoryName}"></span><span th:unless="${description.suggestion}" class="text-secondary">Нет</span></td><td><form class="d-flex gap-2" th:action="@{/merchants/match}" method="post"><input type="hidden" name="normalizedDescription" th:value="${description.normalizedDescription}"><select class="form-select form-select-sm" name="merchantId" required><option value="" selected disabled>Выберите получателя</option><option th:each="merchant : ${merchants}" th:value="${merchant.id}" th:selected="${description.suggestion != null and merchant.id == description.suggestion.id}" th:text="${merchant.displayName + ' — ' + merchant.categoryName}"></option></select><button class="btn btn-sm btn-primary" type="submit">Связать все</button></form><a class="small d-block mt-1" th:href="@{/knowledge-base/merchants}">Создать нового получателя</a></td></tr></tbody></table></div></div>
+</main></body></html>

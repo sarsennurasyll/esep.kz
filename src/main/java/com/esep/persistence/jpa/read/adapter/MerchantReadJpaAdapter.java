@@ -8,19 +8,14 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-/**
- * JPA-адаптер read-порта списка продавцов.
- */
+/** JPA-адаптер read-порта списка продавцов. */
 @Repository
 public class MerchantReadJpaAdapter implements MerchantReadQuery {
-
     private final MerchantReadJpaRepository merchantReadJpaRepository;
     private final MerchantReferenceJpaMapper merchantReferenceJpaMapper;
 
-    public MerchantReadJpaAdapter(
-            MerchantReadJpaRepository merchantReadJpaRepository,
-            MerchantReferenceJpaMapper merchantReferenceJpaMapper
-    ) {
+    public MerchantReadJpaAdapter(MerchantReadJpaRepository merchantReadJpaRepository,
+                                  MerchantReferenceJpaMapper merchantReferenceJpaMapper) {
         this.merchantReadJpaRepository = merchantReadJpaRepository;
         this.merchantReferenceJpaMapper = merchantReferenceJpaMapper;
     }
@@ -31,7 +26,8 @@ public class MerchantReadJpaAdapter implements MerchantReadQuery {
                 .map(merchant -> new MerchantSummary(
                         merchantReferenceJpaMapper.toReference(merchant.getId()),
                         merchant.getOriginalName(),
-                        merchant.getCategory() == null ? "Без категории" : merchant.getCategory().getName()
+                        merchant.getCategory() == null ? "Без категории" : merchant.getCategory().getName(),
+                        merchant.getAliases().stream().map(alias -> alias.getNormalizedAlias()).toList()
                 ))
                 .toList();
     }
