@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
@@ -38,7 +39,7 @@ class StatementWebControllerTest {
 
     @Test
     void shouldRedirectToImportedStatement() throws Exception {
-        when(statementWebApiClient.importStatement(any())).thenReturn(new StatementImportResponse(
+        when(statementWebApiClient.importStatement(any(), eq(BankType.KASPI))).thenReturn(new StatementImportResponse(
                 42L,
                 2,
                 2,
@@ -48,18 +49,20 @@ class StatementWebControllerTest {
         ));
 
         mockMvc.perform(multipart("/import")
-                        .file(new MockMultipartFile("file", "statement.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes())))
+                        .file(new MockMultipartFile("file", "statement.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes()))
+                        .param("bankType", "KASPI"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(view().name("redirect:/statements/42"));
     }
 
     @Test
     void shouldShowImportErrorAfterInvalidPdf() throws Exception {
-        when(statementWebApiClient.importStatement(any()))
+        when(statementWebApiClient.importStatement(any(), eq(BankType.KASPI)))
                 .thenThrow(new StatementApiException(400, "Invalid PDF", null));
 
         mockMvc.perform(multipart("/import")
-                        .file(new MockMultipartFile("file", "invalid.pdf", MediaType.APPLICATION_PDF_VALUE, "invalid".getBytes())))
+                        .file(new MockMultipartFile("file", "invalid.pdf", MediaType.APPLICATION_PDF_VALUE, "invalid".getBytes()))
+                        .param("bankType", "KASPI"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(view().name("redirect:/import"))
                 .andExpect(flash().attributeExists("importError"));

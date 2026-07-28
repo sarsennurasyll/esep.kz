@@ -11,10 +11,12 @@ import com.esep.normalization.service.DefaultMerchantNormalizer;
 import com.esep.persistence.interfaces.StatementCatalog;
 import com.esep.persistence.interfaces.TransactionCatalog;
 import com.esep.statementimport.interfaces.StatementParser;
+import com.esep.statementimport.interfaces.StatementParserRegistry;
 import com.esep.statementimport.kaspi.KaspiStatementParser;
 import com.esep.statementimport.pdf.PdfBoxTextExtractor;
 import com.esep.statementimport.pdf.PdfTextExtractor;
 import com.esep.statementimport.service.DefaultStatementImportUseCase;
+import com.esep.statementimport.service.DefaultStatementParserRegistry;
 import com.esep.statementimport.service.DefaultStatementImporter;
 import com.esep.statementimport.service.StatementPeriodResolver;
 import com.esep.statementimport.service.TransactionFingerprintGenerator;
@@ -34,8 +36,13 @@ public class StatementImportConfiguration {
     }
 
     @Bean
-    StatementParser statementParser(PdfTextExtractor pdfTextExtractor) {
+    StatementParser kaspiStatementParser(PdfTextExtractor pdfTextExtractor) {
         return new KaspiStatementParser(pdfTextExtractor);
+    }
+
+    @Bean
+    StatementParserRegistry statementParserRegistry(List<StatementParser> statementParsers) {
+        return new DefaultStatementParserRegistry(statementParsers);
     }
 
     @Bean
@@ -81,7 +88,7 @@ public class StatementImportConfiguration {
 
     @Bean
     DefaultStatementImportUseCase statementImportUseCase(
-            StatementParser statementParser,
+            StatementParserRegistry statementParserRegistry,
             DefaultStatementImporter statementImporter,
             TransactionImportProcessor transactionImportProcessor,
             TransactionFingerprintGenerator transactionFingerprintGenerator,
@@ -90,7 +97,7 @@ public class StatementImportConfiguration {
             TransactionCatalog transactionCatalog
     ) {
         return new DefaultStatementImportUseCase(
-                statementParser,
+                statementParserRegistry,
                 statementImporter,
                 transactionImportProcessor,
                 transactionFingerprintGenerator,

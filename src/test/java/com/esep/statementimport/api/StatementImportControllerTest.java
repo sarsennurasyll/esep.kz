@@ -3,6 +3,7 @@ package com.esep.statementimport.api;
 import com.esep.entity.BankType;
 import com.esep.statementimport.exception.StatementAlreadyImportedException;
 import com.esep.statementimport.exception.StatementWithoutTransactionsException;
+import com.esep.statementimport.exception.UnsupportedBankTypeException;
 import com.esep.statementimport.model.StatementImportResult;
 import com.esep.statementimport.pdf.PdfExtractionException;
 import com.esep.statementimport.service.DefaultStatementImportUseCase;
@@ -47,7 +48,8 @@ class StatementImportControllerTest {
                 ));
 
         mockMvc.perform(multipart("/api/statements/import")
-                        .file(pdfFile("statement.pdf", "content")))
+                        .file(pdfFile("statement.pdf", "content"))
+                        .param("bankType", "KASPI"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statementId").value(42))
                 .andExpect(jsonPath("$.operationsTotal").value(4))
@@ -63,7 +65,8 @@ class StatementImportControllerTest {
                 .thenThrow(new StatementAlreadyImportedException("a".repeat(64)));
 
         mockMvc.perform(multipart("/api/statements/import")
-                        .file(pdfFile("statement.pdf", "content")))
+                        .file(pdfFile("statement.pdf", "content"))
+                        .param("bankType", "KASPI"))
                 .andExpect(status().isConflict());
     }
 
@@ -73,7 +76,8 @@ class StatementImportControllerTest {
                 .thenThrow(new StatementWithoutTransactionsException());
 
         mockMvc.perform(multipart("/api/statements/import")
-                        .file(pdfFile("empty.pdf", "")))
+                        .file(pdfFile("empty.pdf", ""))
+                        .param("bankType", "KASPI"))
                 .andExpect(status().isBadRequest());
     }
 
@@ -83,7 +87,19 @@ class StatementImportControllerTest {
                 .thenThrow(new PdfExtractionException("Invalid PDF", new IOException("Invalid PDF")));
 
         mockMvc.perform(multipart("/api/statements/import")
-                        .file(pdfFile("invalid.pdf", "not a pdf")))
+                        .file(pdfFile("invalid.pdf", "not a pdf"))
+                        .param("bankType", "KASPI"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldReturnBadRequestForBankWithoutRegisteredParser() throws Exception {
+        when(statementImportUseCase.importStatement(any(InputStream.class), eq(BankType.HALYK), eq("statement.pdf")))
+                .thenThrow(new UnsupportedBankTypeException(BankType.HALYK));
+
+        mockMvc.perform(multipart("/api/statements/import")
+                        .file(pdfFile("statement.pdf", "content"))
+                        .param("bankType", "HALYK"))
                 .andExpect(status().isBadRequest());
     }
 

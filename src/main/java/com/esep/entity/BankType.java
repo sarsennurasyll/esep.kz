@@ -1,5 +1,9 @@
 package com.esep.entity;
 
 public enum BankType {
-    KASPI
+    KASPI,
+    HALYK,
+    JUSAN,
+    FREEDOM,
+    BCC
 }

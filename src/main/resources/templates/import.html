@@ -12,6 +12,12 @@
                     <p class="text-secondary">Выберите обезличенную или личную PDF-выписку Kaspi. Файл будет обработан и сохранён в Esep.</p>
                     <div th:if="${importError}" class="alert alert-danger" th:text="${importError}"></div>
                     <form th:action="@{/import}" method="post" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="bankType" class="form-label">Банк</label>
+                            <select id="bankType" name="bankType" class="form-select" required>
+                                <option value="KASPI" selected>Kaspi</option>
+                            </select>
+                        </div>
                         <div class="mb-4">
                             <label for="file" class="form-label">PDF-выписка</label>
                             <input id="file" name="file" class="form-control" type="file" accept="application/pdf,.pdf" required>

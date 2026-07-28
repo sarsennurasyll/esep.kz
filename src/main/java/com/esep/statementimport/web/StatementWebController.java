@@ -1,5 +1,6 @@
 package com.esep.statementimport.web;
 
+import com.esep.entity.BankType;
 import com.esep.statementimport.api.dto.StatementImportResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -32,10 +33,11 @@ public class StatementWebController {
     @PostMapping("/import")
     public String importStatement(
             @RequestParam("file") MultipartFile file,
+            @RequestParam(name = "bankType", defaultValue = "KASPI") BankType bankType,
             RedirectAttributes redirectAttributes
     ) {
         try {
-            StatementImportResponse result = statementWebApiClient.importStatement(file);
+            StatementImportResponse result = statementWebApiClient.importStatement(file, bankType);
             return "redirect:/statements/" + result.statementId();
         } catch (StatementApiException exception) {
             redirectAttributes.addFlashAttribute("importError", importErrorMessage(exception));

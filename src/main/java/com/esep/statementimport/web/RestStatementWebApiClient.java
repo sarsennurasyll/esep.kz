@@ -1,5 +1,6 @@
 package com.esep.statementimport.web;
 
+import com.esep.entity.BankType;
 import com.esep.statementimport.api.dto.StatementImportResponse;
 import com.esep.statementimport.api.dto.StatementResponse;
 import com.esep.statementimport.api.dto.TransactionResponse;
@@ -56,7 +57,7 @@ public class RestStatementWebApiClient implements StatementWebApiClient {
     }
 
     @Override
-    public StatementImportResponse importStatement(MultipartFile file) {
+    public StatementImportResponse importStatement(MultipartFile file, BankType bankType) {
         try {
             ByteArrayResource resource = new ByteArrayResource(file.getBytes()) {
                 @Override
@@ -68,7 +69,7 @@ public class RestStatementWebApiClient implements StatementWebApiClient {
             return execute(() -> restClient.post()
                     .uri("/import")
                     .contentType(MediaType.MULTIPART_FORM_DATA)
-                    .body(java.util.Map.of("file", resource))
+                    .body(java.util.Map.of("file", resource, "bankType", bankType.name()))
                     .retrieve()
                     .body(StatementImportResponse.class));
         } catch (IOException exception) {

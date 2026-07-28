@@ -16,10 +16,12 @@ import com.esep.persistence.interfaces.TransactionCatalog;
 import com.esep.persistence.model.StatementPersistenceCommand;
 import com.esep.persistence.model.TransactionPersistenceCommand;
 import com.esep.statementimport.interfaces.StatementParser;
+import com.esep.statementimport.interfaces.StatementParserRegistry;
 import com.esep.statementimport.kaspi.KaspiStatementParser;
 import com.esep.statementimport.pdf.PdfBoxTextExtractor;
 import com.esep.statementimport.pdf.PdfTextExtractor;
 import com.esep.statementimport.service.DefaultStatementImportUseCase;
+import com.esep.statementimport.service.DefaultStatementParserRegistry;
 import com.esep.statementimport.service.DefaultStatementImporter;
 import com.esep.statementimport.service.StatementPeriodResolver;
 import com.esep.statementimport.service.TransactionFingerprintGenerator;
@@ -64,7 +66,7 @@ class StatementImportUseCaseIntegrationTest {
         StatementParser statementParser = createStatementParser();
 
         return new DefaultStatementImportUseCase(
-                statementParser,
+                new DefaultStatementParserRegistry(List.of(statementParser)),
                 new DefaultStatementImporter(recognitionService),
                 new TransactionImportProcessor(recognitionService),
                 new TransactionFingerprintGenerator(),

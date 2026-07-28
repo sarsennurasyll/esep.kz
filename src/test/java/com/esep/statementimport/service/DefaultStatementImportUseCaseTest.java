@@ -11,6 +11,7 @@ import com.esep.persistence.model.StatementPersistenceCommand;
 import com.esep.persistence.model.TransactionPersistenceCommand;
 import com.esep.statementimport.exception.StatementAlreadyImportedException;
 import com.esep.statementimport.interfaces.StatementParser;
+import com.esep.statementimport.interfaces.StatementParserRegistry;
 import com.esep.statementimport.model.ParsedStatement;
 import com.esep.statementimport.model.ParsedTransaction;
 import com.esep.statementimport.model.StatementImportResult;
@@ -106,8 +107,10 @@ class DefaultStatementImportUseCaseTest {
             TransactionCatalog transactionCatalog
     ) {
         TransactionImportProcessor processor = new TransactionImportProcessor(recognitionService);
+        StatementParserRegistry statementParserRegistry = mock(StatementParserRegistry.class);
+        when(statementParserRegistry.getParser(BankType.KASPI)).thenReturn(parser);
         return new DefaultStatementImportUseCase(
-                parser,
+                statementParserRegistry,
                 new DefaultStatementImporter(processor),
                 processor,
                 new TransactionFingerprintGenerator(),

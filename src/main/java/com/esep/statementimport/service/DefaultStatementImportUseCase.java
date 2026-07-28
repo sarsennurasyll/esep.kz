@@ -7,7 +7,7 @@ import com.esep.persistence.interfaces.TransactionCatalog;
 import com.esep.persistence.model.StatementPersistenceCommand;
 import com.esep.persistence.model.TransactionPersistenceCommand;
 import com.esep.statementimport.exception.StatementAlreadyImportedException;
-import com.esep.statementimport.interfaces.StatementParser;
+import com.esep.statementimport.interfaces.StatementParserRegistry;
 import com.esep.statementimport.model.ImportResult;
 import com.esep.statementimport.model.ParsedStatement;
 import com.esep.statementimport.model.StatementImportResult;
@@ -25,7 +25,7 @@ import java.util.List;
  */
 public class DefaultStatementImportUseCase {
 
-    private final StatementParser statementParser;
+    private final StatementParserRegistry statementParserRegistry;
     private final DefaultStatementImporter statementImporter;
     private final TransactionImportProcessor transactionImportProcessor;
     private final TransactionFingerprintGenerator transactionFingerprintGenerator;
@@ -34,7 +34,7 @@ public class DefaultStatementImportUseCase {
     private final TransactionCatalog transactionCatalog;
 
     public DefaultStatementImportUseCase(
-            StatementParser statementParser,
+            StatementParserRegistry statementParserRegistry,
             DefaultStatementImporter statementImporter,
             TransactionImportProcessor transactionImportProcessor,
             TransactionFingerprintGenerator transactionFingerprintGenerator,
@@ -42,7 +42,7 @@ public class DefaultStatementImportUseCase {
             StatementCatalog statementCatalog,
             TransactionCatalog transactionCatalog
     ) {
-        this.statementParser = statementParser;
+        this.statementParserRegistry = statementParserRegistry;
         this.statementImporter = statementImporter;
         this.transactionImportProcessor = transactionImportProcessor;
         this.transactionFingerprintGenerator = transactionFingerprintGenerator;
@@ -60,7 +60,8 @@ public class DefaultStatementImportUseCase {
             throw new StatementAlreadyImportedException(sourceFileHash);
         }
 
-        ParsedStatement parsedStatement = statementParser.parse(new ByteArrayInputStream(sourceFile));
+        ParsedStatement parsedStatement = statementParserRegistry.getParser(bankType)
+                .parse(new ByteArrayInputStream(sourceFile));
         StatementPeriod statementPeriod = statementPeriodResolver.resolve(parsedStatement);
         List<ProcessedTransaction> processedTransactions = parsedStatement.transactions().stream()
                 .map(transactionImportProcessor::process)

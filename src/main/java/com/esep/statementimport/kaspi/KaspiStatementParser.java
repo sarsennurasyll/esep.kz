@@ -1,5 +1,6 @@
 package com.esep.statementimport.kaspi;
 
+import com.esep.entity.BankType;
 import com.esep.statementimport.interfaces.StatementParser;
 import com.esep.statementimport.model.ParsedStatement;
 import com.esep.statementimport.pdf.PdfTextExtractor;
@@ -27,6 +28,11 @@ public class KaspiStatementParser implements StatementParser {
         this.pdfTextExtractor = pdfTextExtractor;
         this.transactionExtractor = transactionExtractor;
         this.transactionParser = transactionParser;
+    }
+
+    @Override
+    public BankType supportedBank() {
+        return BankType.KASPI;
     }
 
     @Override

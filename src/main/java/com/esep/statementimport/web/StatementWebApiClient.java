@@ -1,5 +1,6 @@
 package com.esep.statementimport.web;
 
+import com.esep.entity.BankType;
 import com.esep.statementimport.api.dto.StatementImportResponse;
 import com.esep.statementimport.api.dto.StatementResponse;
 import com.esep.statementimport.api.dto.TransactionResponse;
@@ -18,5 +19,5 @@ public interface StatementWebApiClient {
 
     List<TransactionResponse> findTransactionsByStatementId(Long statementId);
 
-    StatementImportResponse importStatement(MultipartFile file);
+    StatementImportResponse importStatement(MultipartFile file, BankType bankType);
 }
