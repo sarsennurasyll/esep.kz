@@ -24,6 +24,8 @@ import com.esep.statementimport.service.TransactionImportProcessor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.List;
+
 /**
  * Собирает компоненты текущего сценария импорта Kaspi-выписок.
  */
