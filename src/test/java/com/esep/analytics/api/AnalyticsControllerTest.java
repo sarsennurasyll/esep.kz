@@ -2,9 +2,13 @@ package com.esep.analytics.api;
 
 import com.esep.analytics.interfaces.AnalyticsService;
 import com.esep.analytics.model.AnalyticsSummary;
+import com.esep.analytics.model.CategoryOperationCount;
 import com.esep.analytics.model.CategoryExpense;
 import com.esep.analytics.model.MerchantExpense;
+import com.esep.analytics.model.MerchantTypeExpense;
 import com.esep.analytics.model.MonthlyAnalytics;
+import com.esep.analytics.model.PersonTransfer;
+import com.esep.entity.MerchantType;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -48,7 +52,7 @@ class AnalyticsControllerTest {
     @Test
     void shouldReturnCategoryMerchantAndMonthlyAnalytics() throws Exception {
         when(analyticsService.getCategoryExpenses()).thenReturn(List.of(
-                new CategoryExpense("GROCERY", new BigDecimal("300.00"), new BigDecimal("75.00"))
+                new CategoryExpense("GROCERY", "Продукты", new BigDecimal("300.00"), new BigDecimal("75.00"))
         ));
         when(analyticsService.getTopMerchants()).thenReturn(List.of(
                 new MerchantExpense("MAGNUM", new BigDecimal("300.00"), 2)
@@ -59,12 +63,38 @@ class AnalyticsControllerTest {
 
         mockMvc.perform(get("/api/analytics/categories"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].category").value("GROCERY"));
+                .andExpect(jsonPath("$[0].category").value("GROCERY"))
+                .andExpect(jsonPath("$[0].categoryName").value("Продукты"));
         mockMvc.perform(get("/api/analytics/merchants"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].merchant").value("MAGNUM"));
         mockMvc.perform(get("/api/analytics/monthly"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].month").value("2026-07"));
+    }
+
+    @Test
+    void shouldReturnTypePersonAndCategoryCountAnalytics() throws Exception {
+        when(analyticsService.getMerchantTypeExpenses()).thenReturn(List.of(
+                new MerchantTypeExpense(MerchantType.PERSON, new BigDecimal("500.00"), 2)
+        ));
+        when(analyticsService.getTopPersonTransfers()).thenReturn(List.of(
+                new PersonTransfer("ЕРАСЫЛ Е", new BigDecimal("500.00"), 2)
+        ));
+        when(analyticsService.getCategoryOperationCounts()).thenReturn(List.of(
+                new CategoryOperationCount("PERSONAL_TRANSFERS", "Переводы людям", 2)
+        ));
+
+        mockMvc.perform(get("/api/analytics/types"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].merchantType").value("PERSON"))
+                .andExpect(jsonPath("$[0].merchantTypeName").value("Перевод человеку"));
+        mockMvc.perform(get("/api/analytics/people"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].recipient").value("ЕРАСЫЛ Е"));
+        mockMvc.perform(get("/api/analytics/category-counts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].categoryName").value("Переводы людям"))
+                .andExpect(jsonPath("$[0].transactionCount").value(2));
     }
 }

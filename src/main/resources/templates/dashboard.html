@@ -22,18 +22,29 @@
         <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Расходы по категориям</h2><canvas id="categoriesChart"></canvas></div></div></div>
         <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Доходы и расходы по месяцам</h2><canvas id="monthlyChart"></canvas></div></div></div>
         <div class="col-12"><div class="card statement-card"><div class="card-body"><h2 class="h5">Топ мест расходов</h2><canvas id="merchantsChart"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Расходы по типам получателей</h2><canvas id="merchantTypesChart"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Топ переводов людям</h2><canvas id="peopleChart"></canvas></div></div></div>
+        <div class="col-12"><div class="card statement-card"><div class="card-body"><h2 class="h5">Количество операций по категориям</h2>
+            <div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Категория</th><th class="text-end">Операций</th></tr></thead><tbody>
+                <tr th:each="count : ${categoryCounts}"><td th:text="${count.categoryName}"></td><td class="text-end" th:text="${count.transactionCount}"></td></tr>
+                <tr th:if="${#lists.isEmpty(categoryCounts)}"><td colspan="2" class="text-secondary">Пока нет расходных операций.</td></tr>
+            </tbody></table></div>
+        </div></div></div>
     </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
 <script th:inline="javascript">
     const categories = /*[[${categories}]]*/ [];
+    const categoryCounts = /*[[${categoryCounts}]]*/ [];
     const merchants = /*[[${merchants}]]*/ [];
+    const merchantTypes = /*[[${merchantTypes}]]*/ [];
+    const people = /*[[${people}]]*/ [];
     const monthly = /*[[${monthly}]]*/ [];
     const palette = ['#1d6a96', '#2f855a', '#d69e2e', '#805ad5', '#dd6b20', '#e53e3e', '#3182ce'];
 
     new Chart(document.getElementById('categoriesChart'), {
         type: 'doughnut',
-        data: {labels: categories.map(item => item.category), datasets: [{data: categories.map(item => item.amount), backgroundColor: palette}]},
+        data: {labels: categories.map(item => item.categoryName), datasets: [{data: categories.map(item => item.amount), backgroundColor: palette}]},
         options: {plugins: {legend: {position: 'bottom'}}}
     });
     new Chart(document.getElementById('monthlyChart'), {
@@ -46,6 +57,16 @@
     new Chart(document.getElementById('merchantsChart'), {
         type: 'bar',
         data: {labels: merchants.map(item => item.merchant), datasets: [{label: 'Расходы', data: merchants.map(item => item.amount), backgroundColor: '#1d6a96'}]},
+        options: {indexAxis: 'y', plugins: {legend: {display: false}}}
+    });
+    new Chart(document.getElementById('merchantTypesChart'), {
+        type: 'doughnut',
+        data: {labels: merchantTypes.map(item => item.merchantTypeName), datasets: [{data: merchantTypes.map(item => item.amount), backgroundColor: palette}]},
+        options: {plugins: {legend: {position: 'bottom'}}}
+    });
+    new Chart(document.getElementById('peopleChart'), {
+        type: 'bar',
+        data: {labels: people.map(item => item.recipient), datasets: [{label: 'Переводы', data: people.map(item => item.amount), backgroundColor: '#6f42c1'}]},
         options: {indexAxis: 'y', plugins: {legend: {display: false}}}
     });
 </script>

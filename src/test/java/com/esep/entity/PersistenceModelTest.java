@@ -68,4 +68,14 @@ class PersistenceModelTest {
 
         assertThat(merchantAlias.isVerified()).isTrue();
     }
+
+    @Test
+    void shouldDefaultMerchantTypeToOther() {
+        Merchant merchant = Merchant.builder()
+                .originalName("UNKNOWN")
+                .normalizedName("UNKNOWN")
+                .build();
+
+        assertThat(merchant.getMerchantType()).isEqualTo(MerchantType.OTHER);
+    }
 }

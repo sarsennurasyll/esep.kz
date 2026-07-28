@@ -3,9 +3,12 @@ package com.esep.analytics.service;
 import com.esep.analytics.interfaces.AnalyticsQuery;
 import com.esep.analytics.interfaces.AnalyticsService;
 import com.esep.analytics.model.AnalyticsSummary;
+import com.esep.analytics.model.CategoryOperationCount;
 import com.esep.analytics.model.CategoryExpense;
 import com.esep.analytics.model.MerchantExpense;
+import com.esep.analytics.model.MerchantTypeExpense;
 import com.esep.analytics.model.MonthlyAnalytics;
+import com.esep.analytics.model.PersonTransfer;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -38,13 +41,19 @@ public class DefaultAnalyticsService implements AnalyticsService {
 
         if (totalExpense.signum() == 0) {
             return expenses.stream()
-                    .map(expense -> new CategoryExpense(expense.category(), expense.amount(), BigDecimal.ZERO))
+                    .map(expense -> new CategoryExpense(
+                            expense.category(),
+                            expense.categoryName(),
+                            expense.amount(),
+                            BigDecimal.ZERO
+                    ))
                     .toList();
         }
 
         return expenses.stream()
                 .map(expense -> new CategoryExpense(
                         expense.category(),
+                        expense.categoryName(),
                         expense.amount(),
                         expense.amount()
                                 .multiply(BigDecimal.valueOf(100))
@@ -56,6 +65,21 @@ public class DefaultAnalyticsService implements AnalyticsService {
     @Override
     public List<MerchantExpense> getTopMerchants() {
         return analyticsQuery.getTopMerchants();
+    }
+
+    @Override
+    public List<CategoryOperationCount> getCategoryOperationCounts() {
+        return analyticsQuery.getCategoryOperationCounts();
+    }
+
+    @Override
+    public List<MerchantTypeExpense> getMerchantTypeExpenses() {
+        return analyticsQuery.getMerchantTypeExpenses();
+    }
+
+    @Override
+    public List<PersonTransfer> getTopPersonTransfers() {
+        return analyticsQuery.getTopPersonTransfers();
     }
 
     @Override

@@ -20,7 +20,10 @@ public class DashboardWebController {
     public String dashboard(Model model) {
         model.addAttribute("summary", analyticsWebApiClient.getSummary());
         model.addAttribute("categories", analyticsWebApiClient.getCategoryExpenses());
+        model.addAttribute("categoryCounts", analyticsWebApiClient.getCategoryOperationCounts());
         model.addAttribute("merchants", analyticsWebApiClient.getTopMerchants());
+        model.addAttribute("merchantTypes", analyticsWebApiClient.getMerchantTypeExpenses());
+        model.addAttribute("people", analyticsWebApiClient.getTopPersonTransfers());
         model.addAttribute("monthly", analyticsWebApiClient.getMonthlyAnalytics());
         return "dashboard";
     }

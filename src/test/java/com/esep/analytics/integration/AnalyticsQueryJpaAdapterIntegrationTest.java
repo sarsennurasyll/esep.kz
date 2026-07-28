@@ -5,6 +5,7 @@ import com.esep.entity.BankType;
 import com.esep.entity.Category;
 import com.esep.entity.DetectionSource;
 import com.esep.entity.Merchant;
+import com.esep.entity.MerchantType;
 import com.esep.entity.Statement;
 import com.esep.entity.Transaction;
 import com.esep.entity.TransactionType;
@@ -51,8 +52,10 @@ class AnalyticsQueryJpaAdapterIntegrationTest {
     void shouldAggregateSeveralStatementsCategoriesAndUnknownMerchants() {
         Category grocery = category("GROCERY", "Продукты");
         Category pharmacy = category("PHARMACY", "Аптеки");
-        Merchant magnum = merchant("MAGNUM", grocery);
-        Merchant europharma = merchant("EUROPHARMA", pharmacy);
+        Category transfers = category("PERSONAL_TRANSFERS", "Переводы людям");
+        Merchant magnum = merchant("MAGNUM", grocery, MerchantType.STORE);
+        Merchant europharma = merchant("EUROPHARMA", pharmacy, MerchantType.PHARMACY);
+        Merchant erasyl = merchant("ЕРАСЫЛ Е", transfers, MerchantType.PERSON);
         Statement july = statement("a");
         Statement august = statement("b");
 
@@ -61,21 +64,40 @@ class AnalyticsQueryJpaAdapterIntegrationTest {
         transaction(july, null, LocalDate.of(2026, 7, 4), new BigDecimal("-50.00"), "3");
         transaction(july, magnum, LocalDate.of(2026, 7, 5), new BigDecimal("1000.00"), "4");
         transaction(august, null, LocalDate.of(2026, 8, 1), new BigDecimal("-300.00"), "5");
+        transaction(august, erasyl, LocalDate.of(2026, 8, 2), new BigDecimal("-500.00"), "6");
         entityManager.flush();
         entityManager.clear();
 
         assertThat(analyticsQuery.getSummary()).isEqualTo(new AnalyticsSummary(
-                2, 5, new BigDecimal("1000.00"), new BigDecimal("650.00"), 3, 2
+                2, 6, new BigDecimal("1000.00"), new BigDecimal("1150.00"), 4, 2
         ));
         assertThat(analyticsQuery.getCategoryExpenses())
                 .extracting(expense -> expense.category() + ":" + expense.amount())
-                .containsExactly("UNCATEGORIZED:350.00", "PHARMACY:200.00", "GROCERY:100.00");
+                .containsExactly(
+                        "PERSONAL_TRANSFERS:500.00",
+                        "UNCATEGORIZED:350.00",
+                        "PHARMACY:200.00",
+                        "GROCERY:100.00"
+                );
+        assertThat(analyticsQuery.getCategoryOperationCounts())
+                .extracting(count -> count.category() + ":" + count.transactionCount())
+                .containsExactlyInAnyOrder(
+                        "UNCATEGORIZED:2",
+                        "GROCERY:1",
+                        "PERSONAL_TRANSFERS:1",
+                        "PHARMACY:1"
+                );
         assertThat(analyticsQuery.getTopMerchants())
                 .extracting(expense -> expense.merchant() + ":" + expense.amount() + ":" + expense.transactionCount())
-                .containsExactly("EUROPHARMA:200.00:1", "MAGNUM:100.00:1");
+                .containsExactly("ЕРАСЫЛ Е:500.00:1", "EUROPHARMA:200.00:1", "MAGNUM:100.00:1");
+        assertThat(analyticsQuery.getMerchantTypeExpenses())
+                .extracting(expense -> expense.merchantType() + ":" + expense.amount() + ":" + expense.transactionCount())
+                .containsExactly("PERSON:500.00:1", "PHARMACY:200.00:1", "STORE:100.00:1");
+        assertThat(analyticsQuery.getTopPersonTransfers())
+                .containsExactly(new com.esep.analytics.model.PersonTransfer("ЕРАСЫЛ Е", new BigDecimal("500.00"), 1));
         assertThat(analyticsQuery.getMonthlyAnalytics())
                 .extracting(month -> month.month() + ":" + month.income() + ":" + month.expense())
-                .containsExactly("2026-07:1000.00:350.00", "2026-08:0:300.00");
+                .containsExactly("2026-07:1000.00:350.00", "2026-08:0:800.00");
     }
 
     private Category category(String code, String name) {
@@ -84,11 +106,12 @@ class AnalyticsQueryJpaAdapterIntegrationTest {
         return category;
     }
 
-    private Merchant merchant(String name, Category category) {
+    private Merchant merchant(String name, Category category, MerchantType merchantType) {
         Merchant merchant = Merchant.builder()
                 .originalName(name)
                 .normalizedName(name)
                 .category(category)
+                .merchantType(merchantType)
                 .confidence(BigDecimal.ONE)
                 .detectionSource(DetectionSource.DATABASE)
                 .verified(true)

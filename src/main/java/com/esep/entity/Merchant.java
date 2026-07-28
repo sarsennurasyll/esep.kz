@@ -70,6 +70,12 @@ public class Merchant {
     private Category category;
 
     @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    @Builder.Default
+    private MerchantType merchantType = MerchantType.OTHER;
+
+    @NotNull
     @DecimalMin("0.00")
     @DecimalMax("1.00")
     @Column(nullable = false, precision = 3, scale = 2)

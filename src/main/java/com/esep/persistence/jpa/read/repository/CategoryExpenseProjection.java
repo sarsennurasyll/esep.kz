@@ -9,5 +9,7 @@ public interface CategoryExpenseProjection {
 
     String getCategory();
 
+    String getCategoryName();
+
     BigDecimal getAmount();
 }

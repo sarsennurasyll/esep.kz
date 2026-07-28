@@ -1,9 +1,12 @@
 package com.esep.analytics.web;
 
 import com.esep.analytics.api.dto.AnalyticsSummaryResponse;
+import com.esep.analytics.api.dto.CategoryOperationCountResponse;
 import com.esep.analytics.api.dto.CategoryExpenseResponse;
 import com.esep.analytics.api.dto.MerchantExpenseResponse;
+import com.esep.analytics.api.dto.MerchantTypeExpenseResponse;
 import com.esep.analytics.api.dto.MonthlyAnalyticsResponse;
+import com.esep.analytics.api.dto.PersonTransferResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -39,8 +42,32 @@ public class RestAnalyticsWebApiClient implements AnalyticsWebApiClient {
     }
 
     @Override
+    public List<CategoryOperationCountResponse> getCategoryOperationCounts() {
+        return Arrays.asList(restClient.get()
+                .uri("/category-counts")
+                .retrieve()
+                .body(CategoryOperationCountResponse[].class));
+    }
+
+    @Override
     public List<MerchantExpenseResponse> getTopMerchants() {
         return Arrays.asList(restClient.get().uri("/merchants").retrieve().body(MerchantExpenseResponse[].class));
+    }
+
+    @Override
+    public List<MerchantTypeExpenseResponse> getMerchantTypeExpenses() {
+        return Arrays.asList(restClient.get()
+                .uri("/types")
+                .retrieve()
+                .body(MerchantTypeExpenseResponse[].class));
+    }
+
+    @Override
+    public List<PersonTransferResponse> getTopPersonTransfers() {
+        return Arrays.asList(restClient.get()
+                .uri("/people")
+                .retrieve()
+                .body(PersonTransferResponse[].class));
     }
 
     @Override

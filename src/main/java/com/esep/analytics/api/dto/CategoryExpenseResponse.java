@@ -9,11 +9,17 @@ import java.math.BigDecimal;
  */
 public record CategoryExpenseResponse(
         String category,
+        String categoryName,
         BigDecimal amount,
         BigDecimal percent
 ) {
 
     public static CategoryExpenseResponse from(CategoryExpense expense) {
-        return new CategoryExpenseResponse(expense.category(), expense.amount(), expense.percent());
+        return new CategoryExpenseResponse(
+                expense.category(),
+                expense.categoryName(),
+                expense.amount(),
+                expense.percent()
+        );
     }
 }

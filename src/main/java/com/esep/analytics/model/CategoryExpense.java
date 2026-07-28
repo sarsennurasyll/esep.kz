@@ -7,6 +7,7 @@ import java.math.BigDecimal;
  */
 public record CategoryExpense(
         String category,
+        String categoryName,
         BigDecimal amount,
         BigDecimal percent
 ) {
