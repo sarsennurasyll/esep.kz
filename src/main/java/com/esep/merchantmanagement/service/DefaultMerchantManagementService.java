@@ -1,0 +1,108 @@
+package com.esep.merchantmanagement.service;
+
+import com.esep.merchantmanagement.exception.MerchantAliasAlreadyExistsException;
+import com.esep.merchantmanagement.exception.MerchantNotFoundException;
+import com.esep.merchantmanagement.interfaces.MerchantAliasMatchCatalog;
+import com.esep.merchantmanagement.interfaces.MerchantManagementService;
+import com.esep.merchantmanagement.interfaces.MerchantReadQuery;
+import com.esep.merchantmanagement.interfaces.UnknownMerchantDescriptionQuery;
+import com.esep.merchantmanagement.model.MerchantAliasMatchCommand;
+import com.esep.merchantmanagement.model.MerchantSummary;
+import com.esep.merchantmanagement.model.UnknownMerchantCandidate;
+import com.esep.merchantmanagement.model.UnknownMerchantDescription;
+import com.esep.merchantresolver.interfaces.MerchantAliasCatalog;
+import com.esep.merchantresolver.interfaces.MerchantCatalog;
+import com.esep.merchantresolver.model.MerchantReference;
+import com.esep.normalization.interfaces.MerchantNormalizer;
+import org.springframework.stereotype.Service;
+
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Реализует прикладной сценарий подтверждения неизвестных описаний операций.
+ */
+@Service
+public class DefaultMerchantManagementService implements MerchantManagementService {
+
+    private final UnknownMerchantDescriptionQuery unknownMerchantDescriptionQuery;
+    private final MerchantReadQuery merchantReadQuery;
+    private final MerchantCatalog merchantCatalog;
+    private final MerchantAliasCatalog merchantAliasCatalog;
+    private final MerchantAliasMatchCatalog merchantAliasMatchCatalog;
+    private final MerchantNormalizer merchantNormalizer;
+
+    public DefaultMerchantManagementService(
+            UnknownMerchantDescriptionQuery unknownMerchantDescriptionQuery,
+            MerchantReadQuery merchantReadQuery,
+            MerchantCatalog merchantCatalog,
+            MerchantAliasCatalog merchantAliasCatalog,
+            MerchantAliasMatchCatalog merchantAliasMatchCatalog,
+            MerchantNormalizer merchantNormalizer
+    ) {
+        this.unknownMerchantDescriptionQuery = unknownMerchantDescriptionQuery;
+        this.merchantReadQuery = merchantReadQuery;
+        this.merchantCatalog = merchantCatalog;
+        this.merchantAliasCatalog = merchantAliasCatalog;
+        this.merchantAliasMatchCatalog = merchantAliasMatchCatalog;
+        this.merchantNormalizer = merchantNormalizer;
+    }
+
+    @Override
+    public List<UnknownMerchantDescription> findUnknownDescriptions() {
+        Map<String, UnknownMerchantDescription> descriptions = new LinkedHashMap<>();
+
+        for (UnknownMerchantCandidate candidate : unknownMerchantDescriptionQuery.findAll()) {
+            String normalizedDescription = merchantNormalizer.normalize(candidate.description()).normalizedName();
+            if (normalizedDescription == null || normalizedDescription.isBlank() || isKnown(normalizedDescription)) {
+                continue;
+            }
+
+            descriptions.merge(
+                    normalizedDescription,
+                    new UnknownMerchantDescription(normalizedDescription, candidate.usageCount(), candidate.description()),
+                    (current, next) -> new UnknownMerchantDescription(
+                            current.normalizedDescription(),
+                            current.usageCount() + next.usageCount(),
+                            current.exampleDescription()
+                    )
+            );
+        }
+
+        return descriptions.values().stream()
+                .sorted(java.util.Comparator.comparingLong(UnknownMerchantDescription::usageCount).reversed())
+                .toList();
+    }
+
+    @Override
+    public List<MerchantSummary> findMerchants() {
+        return merchantReadQuery.findAll();
+    }
+
+    @Override
+    public void match(String normalizedDescription, MerchantReference merchantReference) {
+        String normalizedAlias = merchantNormalizer.normalize(normalizedDescription).normalizedName();
+        if (normalizedAlias == null || normalizedAlias.isBlank()) {
+            throw new IllegalArgumentException("Normalized description must not be blank");
+        }
+
+        merchantCatalog.findByReference(merchantReference)
+                .orElseThrow(() -> new MerchantNotFoundException(merchantReference));
+
+        if (merchantAliasCatalog.findByNormalizedAlias(normalizedAlias).isPresent()) {
+            throw new MerchantAliasAlreadyExistsException(normalizedAlias);
+        }
+
+        merchantAliasMatchCatalog.save(new MerchantAliasMatchCommand(
+                normalizedAlias,
+                normalizedAlias,
+                merchantReference
+        ));
+    }
+
+    private boolean isKnown(String normalizedDescription) {
+        return merchantCatalog.findByCanonicalName(normalizedDescription).isPresent()
+                || merchantAliasCatalog.findByNormalizedAlias(normalizedDescription).isPresent();
+    }
+}

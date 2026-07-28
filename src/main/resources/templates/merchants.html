@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Неизвестные продавцы')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navigation}"></nav>
+<main class="container pb-5">
+    <div class="mb-4">
+        <h1 class="h3 mb-1">Неизвестные продавцы</h1>
+        <p class="text-secondary mb-0">Свяжите описание операции с известным продавцом. Следующие импорты будут распознаны автоматически.</p>
+    </div>
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+    <div th:if="${#lists.isEmpty(unknownDescriptions)}" class="alert alert-light border">
+        Все описания операций уже распознаны.
+    </div>
+    <div th:unless="${#lists.isEmpty(unknownDescriptions)}" class="card statement-card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead><tr><th>Описание</th><th>Количество</th><th>Продавец</th><th></th></tr></thead>
+                <tbody>
+                <tr th:each="description, stat : ${unknownDescriptions}">
+                    <td>
+                        <strong class="d-block" th:text="${description.normalizedDescription}"></strong>
+                        <span class="small text-secondary" th:text="${description.exampleDescription}"></span>
+                    </td>
+                    <td th:text="${description.usageCount}"></td>
+                    <td>
+                        <form class="d-flex gap-2" th:action="@{/merchants/match}" method="post">
+                            <input type="hidden" name="normalizedDescription" th:value="${description.normalizedDescription}">
+                            <label class="visually-hidden" th:for="${'merchant-' + stat.index}">Продавец</label>
+                            <select class="form-select form-select-sm" name="merchantId" th:id="${'merchant-' + stat.index}" required>
+                                <option value="" selected disabled>Выберите продавца</option>
+                                <option th:each="merchant : ${merchants}" th:value="${merchant.id}" th:text="${merchant.displayName}"></option>
+                            </select>
+                            <button class="btn btn-sm btn-primary text-nowrap" type="submit">Связать</button>
+                        </form>
+                    </td>
+                    <td></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+</body>
+</html>

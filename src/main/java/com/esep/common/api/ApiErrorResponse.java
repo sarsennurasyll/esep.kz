@@ -1,4 +1,4 @@
-package com.esep.statementimport.api.dto;
+package com.esep.common.api;
 
 /**
  * Стандартизированное описание ошибки HTTP API.

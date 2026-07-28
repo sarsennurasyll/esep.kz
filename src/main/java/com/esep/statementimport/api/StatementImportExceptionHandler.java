@@ -1,7 +1,7 @@
 package com.esep.statementimport.api;
 
+import com.esep.common.api.ApiErrorResponse;
 import com.esep.parser.common.ParserException;
-import com.esep.statementimport.api.dto.ApiErrorResponse;
 import com.esep.statementimport.exception.StatementAlreadyImportedException;
 import com.esep.statementimport.exception.StatementWithoutTransactionsException;
 import com.esep.statementimport.pdf.PdfExtractionException;
