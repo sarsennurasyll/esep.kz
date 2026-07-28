@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navigation}"></nav>
+<main class="container pb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div><h1 class="h3 mb-1">Dashboard</h1><p class="text-secondary mb-0">Сводная аналитика импортированных операций.</p></div>
+        <a class="btn btn-primary" th:href="@{/import}">Импортировать выписку</a>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Выписки</span><div class="h3 mb-0" th:text="${summary.totalStatements}">0</div></div></div></div>
+        <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Операции</span><div class="h3 mb-0" th:text="${summary.totalTransactions}">0</div></div></div></div>
+        <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Доходы</span><div class="h3 mb-0 amount-income" th:text="${summary.totalIncome}">0</div></div></div></div>
+        <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Расходы</span><div class="h3 mb-0 amount-expense" th:text="${summary.totalExpense}">0</div></div></div></div>
+        <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Распознано</span><div class="h3 mb-0" th:text="${summary.recognizedTransactions}">0</div></div></div></div>
+        <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Не распознано</span><div class="h3 mb-0" th:text="${summary.unknownTransactions}">0</div></div></div></div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Расходы по категориям</h2><canvas id="categoriesChart"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Доходы и расходы по месяцам</h2><canvas id="monthlyChart"></canvas></div></div></div>
+        <div class="col-12"><div class="card statement-card"><div class="card-body"><h2 class="h5">TOP Merchant по расходам</h2><canvas id="merchantsChart"></canvas></div></div></div>
+    </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script th:inline="javascript">
+    const categories = /*[[${categories}]]*/ [];
+    const merchants = /*[[${merchants}]]*/ [];
+    const monthly = /*[[${monthly}]]*/ [];
+    const palette = ['#1d6a96', '#2f855a', '#d69e2e', '#805ad5', '#dd6b20', '#e53e3e', '#3182ce'];
+
+    new Chart(document.getElementById('categoriesChart'), {
+        type: 'doughnut',
+        data: {labels: categories.map(item => item.category), datasets: [{data: categories.map(item => item.amount), backgroundColor: palette}]},
+        options: {plugins: {legend: {position: 'bottom'}}}
+    });
+    new Chart(document.getElementById('monthlyChart'), {
+        type: 'bar',
+        data: {labels: monthly.map(item => item.month), datasets: [
+            {label: 'Доходы', data: monthly.map(item => item.income), backgroundColor: '#2f855a'},
+            {label: 'Расходы', data: monthly.map(item => item.expense), backgroundColor: '#e53e3e'}
+        ]}, options: {responsive: true}
+    });
+    new Chart(document.getElementById('merchantsChart'), {
+        type: 'bar',
+        data: {labels: merchants.map(item => item.merchant), datasets: [{label: 'Расходы', data: merchants.map(item => item.amount), backgroundColor: '#1d6a96'}]},
+        options: {indexAxis: 'y', plugins: {legend: {display: false}}}
+    });
+</script>
+</body>
+</html>

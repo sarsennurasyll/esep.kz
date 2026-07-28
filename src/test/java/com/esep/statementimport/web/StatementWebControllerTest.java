@@ -37,16 +37,6 @@ class StatementWebControllerTest {
     private StatementWebApiClient statementWebApiClient;
 
     @Test
-    void shouldRenderHomeWithRecentStatements() throws Exception {
-        when(statementWebApiClient.findAllStatements()).thenReturn(List.of(statement()));
-
-        mockMvc.perform(get("/"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("home"))
-                .andExpect(model().attributeExists("statements"));
-    }
-
-    @Test
     void shouldRedirectToImportedStatement() throws Exception {
         when(statementWebApiClient.importStatement(any())).thenReturn(new StatementImportResponse(
                 42L,

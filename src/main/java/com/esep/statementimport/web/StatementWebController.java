@@ -24,12 +24,6 @@ public class StatementWebController {
         this.statementWebApiClient = statementWebApiClient;
     }
 
-    @GetMapping("/")
-    public String home(Model model) {
-        model.addAttribute("statements", statementWebApiClient.findAllStatements().stream().limit(5).toList());
-        return "home";
-    }
-
     @GetMapping("/import")
     public String importForm() {
         return "import";
