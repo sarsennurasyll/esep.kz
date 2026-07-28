@@ -7,6 +7,8 @@ import com.esep.statementimport.api.dto.TransactionResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.MediaType;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -65,11 +67,14 @@ public class RestStatementWebApiClient implements StatementWebApiClient {
                     return file.getOriginalFilename();
                 }
             };
+            MultiValueMap<String, Object> multipartBody = new LinkedMultiValueMap<>();
+            multipartBody.add("file", resource);
+            multipartBody.add("bankType", bankType.name());
 
             return execute(() -> restClient.post()
                     .uri("/import")
                     .contentType(MediaType.MULTIPART_FORM_DATA)
-                    .body(java.util.Map.of("file", resource, "bankType", bankType.name()))
+                    .body(multipartBody)
                     .retrieve()
                     .body(StatementImportResponse.class));
         } catch (IOException exception) {
