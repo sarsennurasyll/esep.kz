@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Dashboard')}"></head>
+<head th:replace="~{fragments/layout :: head('Аналитика')}"></head>
 <body>
 <nav th:replace="~{fragments/layout :: navigation}"></nav>
 <main class="container pb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div><h1 class="h3 mb-1">Dashboard</h1><p class="text-secondary mb-0">Сводная аналитика импортированных операций.</p></div>
+        <div><h1 class="h3 mb-1">Аналитика расходов</h1><p class="text-secondary mb-0">Сводная аналитика импортированных операций.</p></div>
         <a class="btn btn-primary" th:href="@{/import}">Импортировать выписку</a>
     </div>
 
@@ -21,7 +21,7 @@
     <div class="row g-4">
         <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Расходы по категориям</h2><canvas id="categoriesChart"></canvas></div></div></div>
         <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Доходы и расходы по месяцам</h2><canvas id="monthlyChart"></canvas></div></div></div>
-        <div class="col-12"><div class="card statement-card"><div class="card-body"><h2 class="h5">TOP Merchant по расходам</h2><canvas id="merchantsChart"></canvas></div></div></div>
+        <div class="col-12"><div class="card statement-card"><div class="card-body"><h2 class="h5">Топ мест расходов</h2><canvas id="merchantsChart"></canvas></div></div></div>
     </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>

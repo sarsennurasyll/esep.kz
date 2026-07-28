@@ -1,22 +1,22 @@
 <!doctype html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/layout :: head('Неизвестные продавцы')}"></head>
+<head th:replace="~{fragments/layout :: head('Неизвестные операции')}"></head>
 <body>
 <nav th:replace="~{fragments/layout :: navigation}"></nav>
 <main class="container pb-5">
     <div class="mb-4">
-        <h1 class="h3 mb-1">Неизвестные продавцы</h1>
-        <p class="text-secondary mb-0">Свяжите описание операции с известным продавцом. Следующие импорты будут распознаны автоматически.</p>
+        <h1 class="h3 mb-1">Неизвестные операции</h1>
+        <p class="text-secondary mb-0">Укажите известное место расхода для описания операции. Его категория поможет показать, куда ушли деньги; следующие импорты будут распознаны автоматически.</p>
     </div>
     <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
     <div th:if="${#lists.isEmpty(unknownDescriptions)}" class="alert alert-light border">
-        Все описания операций уже распознаны.
+        Все описания операций уже распознаны. Новые неизвестные операции появятся здесь после следующего импорта.
     </div>
     <div th:unless="${#lists.isEmpty(unknownDescriptions)}" class="card statement-card">
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-                <thead><tr><th>Описание</th><th>Количество</th><th>Продавец</th><th></th></tr></thead>
+                <thead><tr><th>Описание операции</th><th>Количество</th><th>Место расхода</th><th></th></tr></thead>
                 <tbody>
                 <tr th:each="description, stat : ${unknownDescriptions}">
                     <td>
@@ -27,10 +27,11 @@
                     <td>
                         <form class="d-flex gap-2" th:action="@{/merchants/match}" method="post">
                             <input type="hidden" name="normalizedDescription" th:value="${description.normalizedDescription}">
-                            <label class="visually-hidden" th:for="${'merchant-' + stat.index}">Продавец</label>
+                            <label class="visually-hidden" th:for="${'merchant-' + stat.index}">Место расхода</label>
                             <select class="form-select form-select-sm" name="merchantId" th:id="${'merchant-' + stat.index}" required>
-                                <option value="" selected disabled>Выберите продавца</option>
-                                <option th:each="merchant : ${merchants}" th:value="${merchant.id}" th:text="${merchant.displayName}"></option>
+                                <option value="" selected disabled>Выберите место расхода</option>
+                                <option th:each="merchant : ${merchants}" th:value="${merchant.id}"
+                                        th:text="${merchant.displayName + ' — ' + merchant.categoryName}"></option>
                             </select>
                             <button class="btn btn-sm btn-primary text-nowrap" type="submit">Связать</button>
                         </form>

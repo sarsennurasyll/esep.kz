@@ -7,6 +7,7 @@ import com.esep.merchantresolver.model.MerchantReference;
  */
 public record MerchantSummary(
         MerchantReference merchantReference,
-        String displayName
+        String displayName,
+        String categoryName
 ) {
 }

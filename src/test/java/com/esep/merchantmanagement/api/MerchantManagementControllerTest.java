@@ -46,13 +46,14 @@ class MerchantManagementControllerTest {
     @Test
     void shouldReturnMerchants() throws Exception {
         when(merchantManagementService.findMerchants()).thenReturn(List.of(
-                new MerchantSummary(new MerchantReference("42"), "MAGNUM")
+                new MerchantSummary(new MerchantReference("42"), "MAGNUM", "Продукты")
         ));
 
         mockMvc.perform(get("/api/merchants"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value("42"))
-                .andExpect(jsonPath("$[0].displayName").value("MAGNUM"));
+                .andExpect(jsonPath("$[0].displayName").value("MAGNUM"))
+                .andExpect(jsonPath("$[0].categoryName").value("Продукты"));
     }
 
     @Test

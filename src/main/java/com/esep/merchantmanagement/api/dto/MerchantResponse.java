@@ -7,10 +7,15 @@ import com.esep.merchantmanagement.model.MerchantSummary;
  */
 public record MerchantResponse(
         String id,
-        String displayName
+        String displayName,
+        String categoryName
 ) {
 
     public static MerchantResponse from(MerchantSummary merchant) {
-        return new MerchantResponse(merchant.merchantReference().value(), merchant.displayName());
+        return new MerchantResponse(
+                merchant.merchantReference().value(),
+                merchant.displayName(),
+                merchant.categoryName()
+        );
     }
 }

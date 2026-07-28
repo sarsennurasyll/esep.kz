@@ -30,7 +30,8 @@ public class MerchantReadJpaAdapter implements MerchantReadQuery {
         return merchantReadJpaRepository.findAllForSelection().stream()
                 .map(merchant -> new MerchantSummary(
                         merchantReferenceJpaMapper.toReference(merchant.getId()),
-                        merchant.getOriginalName()
+                        merchant.getOriginalName(),
+                        merchant.getCategory() == null ? "Без категории" : merchant.getCategory().getName()
                 ))
                 .toList();
     }

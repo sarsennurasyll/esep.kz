@@ -35,7 +35,7 @@ class MerchantWebControllerTest {
                 new UnknownMerchantResponse("UNKNOWN SHOP", 2, "Unknown Shop")
         ));
         when(merchantWebApiClient.findMerchants()).thenReturn(List.of(
-                new MerchantResponse("42", "MAGNUM")
+                new MerchantResponse("42", "MAGNUM", "Продукты")
         ));
 
         mockMvc.perform(get("/merchants"))
