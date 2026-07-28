@@ -5,6 +5,8 @@ import com.esep.parser.common.ParserException;
 import com.esep.statementimport.exception.StatementAlreadyImportedException;
 import com.esep.statementimport.exception.StatementWithoutTransactionsException;
 import com.esep.statementimport.pdf.PdfExtractionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -18,6 +20,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
         StatementQueryController.class
 })
 public class StatementImportExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(StatementImportExceptionHandler.class);
 
     @ExceptionHandler(StatementAlreadyImportedException.class)
     ResponseEntity<ApiErrorResponse> handleAlreadyImported(StatementAlreadyImportedException exception) {
@@ -36,6 +40,7 @@ public class StatementImportExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiErrorResponse> handleUnexpected(Exception exception) {
+        log.error("Непредвиденная ошибка при обработке запроса к API выписок.", exception);
         return error(HttpStatus.INTERNAL_SERVER_ERROR, exception);
     }
 
