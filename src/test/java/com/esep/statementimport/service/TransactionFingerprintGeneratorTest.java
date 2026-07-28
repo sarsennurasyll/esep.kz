@@ -23,7 +23,7 @@ class TransactionFingerprintGeneratorTest {
 
         String fingerprint = fingerprintGenerator.generate("a".repeat(64), transaction, "MAGNUM");
 
-        assertThat(fingerprint).isEqualTo("502fadbbecf238aa4539c19ea103c2f0cbed654127b85ed6e80d8d18e3368d02");
+        assertThat(fingerprint).isEqualTo("77cc21f69438946149bef539f7bafd42c6c7960147e664644f7dcc056ad7d31d");
     }
 
     @Test
@@ -37,6 +37,29 @@ class TransactionFingerprintGeneratorTest {
 
         String first = fingerprintGenerator.generate("a".repeat(64), transaction, "MAGNUM");
         String second = fingerprintGenerator.generate("a".repeat(64), transaction, "MAGNUM EXPRESS");
+
+        assertThat(first).isNotEqualTo(second);
+    }
+
+    @Test
+    void shouldChangeFingerprintWhenSourceRecordPositionChanges() {
+        ParsedTransaction firstTransaction = new ParsedTransaction(
+                LocalDate.of(2026, 7, 12),
+                "MAGNUM",
+                new BigDecimal("14500.00"),
+                "KZT",
+                0
+        );
+        ParsedTransaction secondTransaction = new ParsedTransaction(
+                LocalDate.of(2026, 7, 12),
+                "MAGNUM",
+                new BigDecimal("14500.00"),
+                "KZT",
+                1
+        );
+
+        String first = fingerprintGenerator.generate("a".repeat(64), firstTransaction, "MAGNUM");
+        String second = fingerprintGenerator.generate("a".repeat(64), secondTransaction, "MAGNUM");
 
         assertThat(first).isNotEqualTo(second);
     }

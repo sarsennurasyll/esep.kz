@@ -8,6 +8,7 @@ import java.security.NoSuchAlgorithmException;
 
 /**
  * Формирует детерминированный отпечаток операции для защиты от дубликатов.
+ * Позиция исходной записи используется, когда выписка не содержит банковского идентификатора операции.
  */
 public class TransactionFingerprintGenerator {
 
@@ -19,6 +20,7 @@ public class TransactionFingerprintGenerator {
         String fingerprintSource = String.join(
                 "\n",
                 sourceFileHash,
+                String.valueOf(transaction.sourceRecordPosition()),
                 transaction.date().toString(),
                 transaction.amount().stripTrailingZeros().toPlainString(),
                 transaction.currency(),

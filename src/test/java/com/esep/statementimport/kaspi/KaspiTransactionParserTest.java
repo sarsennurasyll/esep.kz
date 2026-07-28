@@ -14,7 +14,7 @@ class KaspiTransactionParserTest {
 
     @Test
     void shouldParseMagnumTransactionWithDefaultCurrency() {
-        var transaction = transactionParser.parse("12.07.2026 MAGNUM CASH&CARRY -14500");
+        var transaction = transactionParser.parse("12.07.2026 MAGNUM CASH&CARRY -14500", 0);
 
         assertThat(transaction.date()).isEqualTo(LocalDate.of(2026, 7, 12));
         assertThat(transaction.description()).isEqualTo("MAGNUM CASH&CARRY");
@@ -24,7 +24,7 @@ class KaspiTransactionParserTest {
 
     @Test
     void shouldParseYandexTransaction() {
-        var transaction = transactionParser.parse("13.07.2026 YANDEX.GO -2100");
+        var transaction = transactionParser.parse("13.07.2026 YANDEX.GO -2100", 0);
 
         assertThat(transaction.description()).isEqualTo("YANDEX.GO");
         assertThat(transaction.amount()).isEqualByComparingTo(new BigDecimal("-2100"));
@@ -33,7 +33,7 @@ class KaspiTransactionParserTest {
 
     @Test
     void shouldParseEuropharmaTransactionWithCurrency() {
-        var transaction = transactionParser.parse("14.07.2026 EUROPHARMA -4500 KZT");
+        var transaction = transactionParser.parse("14.07.2026 EUROPHARMA -4500 KZT", 0);
 
         assertThat(transaction.description()).isEqualTo("EUROPHARMA");
         assertThat(transaction.amount()).isEqualByComparingTo(new BigDecimal("-4500"));
@@ -42,7 +42,7 @@ class KaspiTransactionParserTest {
 
     @Test
     void shouldParsePositiveAmount() {
-        var transaction = transactionParser.parse("15.07.2026 CASHBACK 1 500,50 USD");
+        var transaction = transactionParser.parse("15.07.2026 CASHBACK 1 500,50 USD", 0);
 
         assertThat(transaction.amount()).isEqualByComparingTo(new BigDecimal("1500.50"));
         assertThat(transaction.currency()).isEqualTo("USD");
@@ -50,7 +50,7 @@ class KaspiTransactionParserTest {
 
     @Test
     void shouldParseKaspiPdfOperationLine() {
-        var transaction = transactionParser.parse("26.07.26 - 4 670,00 ? Покупка YANDEX.GO");
+        var transaction = transactionParser.parse("26.07.26 - 4 670,00 ? Покупка YANDEX.GO", 0);
 
         assertThat(transaction.date()).isEqualTo(LocalDate.of(2026, 7, 26));
         assertThat(transaction.description()).isEqualTo("YANDEX.GO");
@@ -60,7 +60,7 @@ class KaspiTransactionParserTest {
 
     @Test
     void shouldRejectInvalidTransactionLine() {
-        assertThatThrownBy(() -> transactionParser.parse("MAGNUM -14500"))
+        assertThatThrownBy(() -> transactionParser.parse("MAGNUM -14500", 0))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

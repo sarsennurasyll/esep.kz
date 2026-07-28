@@ -25,6 +25,8 @@ class KaspiStatementParserTest {
         assertThat(statement.transactions()).hasSize(2);
         assertThat(statement.transactions().getFirst().description()).isEqualTo("MAGNUM CASH&CARRY");
         assertThat(statement.transactions().getFirst().amount()).isEqualByComparingTo(new BigDecimal("-14500"));
+        assertThat(statement.transactions().getFirst().sourceRecordPosition()).isZero();
         assertThat(statement.transactions().get(1).description()).isEqualTo("YANDEX.GO");
+        assertThat(statement.transactions().get(1).sourceRecordPosition()).isEqualTo(1);
     }
 }

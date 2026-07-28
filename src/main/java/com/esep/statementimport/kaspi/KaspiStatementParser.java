@@ -6,6 +6,7 @@ import com.esep.statementimport.model.ParsedStatement;
 import com.esep.statementimport.pdf.PdfTextExtractor;
 
 import java.io.InputStream;
+import java.util.stream.IntStream;
 
 /**
  * Начальная реализация парсера выписки Kaspi с поиском сырых строк операций.
@@ -44,7 +45,12 @@ public class KaspiStatementParser implements StatementParser {
                 null,
                 null,
                 null,
-                rawStatement.transactionLines().stream().map(transactionParser::parse).toList()
+                IntStream.range(0, rawStatement.transactionLines().size())
+                        .mapToObj(position -> transactionParser.parse(
+                                rawStatement.transactionLines().get(position),
+                                position
+                        ))
+                        .toList()
         );
     }
 }

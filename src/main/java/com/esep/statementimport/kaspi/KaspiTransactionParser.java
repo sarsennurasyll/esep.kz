@@ -32,7 +32,7 @@ class KaspiTransactionParser {
                     + "(?<description>.+)$"
     );
 
-    ParsedTransaction parse(String rawLine) {
+    ParsedTransaction parse(String rawLine, int sourceRecordPosition) {
         if (rawLine == null) {
             throw new IllegalArgumentException("Строка операции не должна быть null.");
         }
@@ -43,13 +43,14 @@ class KaspiTransactionParser {
             return createTransaction(
                     normalizedMatcher,
                     FULL_YEAR_DATE_FORMATTER,
-                    normalizedMatcher.group("currency")
+                    normalizedMatcher.group("currency"),
+                    sourceRecordPosition
             );
         }
 
         Matcher kaspiMatcher = KASPI_TRANSACTION_LINE.matcher(normalizedLine);
         if (kaspiMatcher.matches()) {
-            return createTransaction(kaspiMatcher, SHORT_YEAR_DATE_FORMATTER, null);
+            return createTransaction(kaspiMatcher, SHORT_YEAR_DATE_FORMATTER, null, sourceRecordPosition);
         }
 
         throw new IllegalArgumentException("Некорректный формат строки операции: " + rawLine);
@@ -58,7 +59,8 @@ class KaspiTransactionParser {
     private ParsedTransaction createTransaction(
             Matcher matcher,
             DateTimeFormatter dateFormatter,
-            String currency
+            String currency,
+            int sourceRecordPosition
     ) {
         try {
             LocalDate date = LocalDate.parse(matcher.group("date"), dateFormatter);
@@ -66,7 +68,7 @@ class KaspiTransactionParser {
             BigDecimal amount = new BigDecimal(normalizeAmount(matcher.group("amount")));
             String resolvedCurrency = resolveCurrency(currency);
 
-            return new ParsedTransaction(date, description, amount, resolvedCurrency);
+            return new ParsedTransaction(date, description, amount, resolvedCurrency, sourceRecordPosition);
         } catch (DateTimeParseException exception) {
             throw new IllegalArgumentException("Некорректная дата операции: " + matcher.group("date"), exception);
         }
