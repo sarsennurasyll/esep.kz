@@ -23,6 +23,7 @@ public class TransactionJpaMapper {
                 .amount(command.amount())
                 .currency(command.currency())
                 .transactionType(command.transactionType())
+                .bankOperationType(command.bankOperationType())
                 .merchant(merchant)
                 .sourceTransactionFingerprint(command.sourceTransactionFingerprint())
                 .statement(statement)

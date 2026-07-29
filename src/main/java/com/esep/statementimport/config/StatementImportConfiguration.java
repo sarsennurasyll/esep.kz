@@ -69,8 +69,8 @@ public class StatementImportConfiguration {
     }
 
     @Bean
-    TransactionImportProcessor transactionImportProcessor(MerchantRecognitionService merchantRecognitionService) {
-        return new TransactionImportProcessor(merchantRecognitionService);
+    TransactionImportProcessor transactionImportProcessor(MerchantRecognitionService merchantRecognitionService, MerchantCatalog merchantCatalog) {
+        return new TransactionImportProcessor(merchantRecognitionService, merchantCatalog);
     }
 
     @Bean

@@ -121,7 +121,8 @@ public class DefaultStatementImportUseCase {
                 transaction.description(),
                 transaction.amount(),
                 transaction.currency(),
-                TransactionType.UNKNOWN,
+                financialTransactionType(transaction),
+                transaction.bankOperationType(),
                 recognition.merchantMatch().merchantReference(),
                 transactionFingerprintGenerator.generate(
                         sourceFileHash,
@@ -129,6 +130,13 @@ public class DefaultStatementImportUseCase {
                         recognition.normalizedMerchant()
                 )
         );
+    }
+
+    private TransactionType financialTransactionType(com.esep.statementimport.model.ParsedTransaction transaction) {
+        if (transaction.bankOperationType() == com.esep.entity.BankOperationType.TRANSFER) {
+            return TransactionType.TRANSFER;
+        }
+        return transaction.amount().signum() > 0 ? TransactionType.INCOME : TransactionType.EXPENSE;
     }
 
     private byte[] readSourceFile(InputStream input) {

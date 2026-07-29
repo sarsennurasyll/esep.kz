@@ -1,84 +1,35 @@
 package com.esep.statementimport.kaspi;
 
+import com.esep.entity.BankOperationType;
 import com.esep.statementimport.model.ParsedTransaction;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Преобразует одну сырую строку операции Kaspi в структурированную операцию.
- */
 class KaspiTransactionParser {
+    private static final Pattern LINE = Pattern.compile("^(?<date>\\d{2}\\.\\d{2}\\.\\d{2})\\s+(?<amount>[+-]?\\s?(?:\\d{1,3}(?:\\s\\d{3})*|\\d+)(?:[.,]\\d+)?)\\s+(?:[^\\p{L}\\p{N}\\s]+\\s+)?(?<operation>Покупка|Пополнение|Перевод)\\s+(?<description>.+)$");
+    private static final Pattern FULL_LINE = Pattern.compile("^(?<date>\\d{2}\\.\\d{2}\\.\\d{4})\\s+(?<description>.+?)\\s+(?<amount>[+-]?\\s?(?:\\d{1,3}(?:\\s\\d{3})*|\\d+)(?:[.,]\\d+)?)(?:\\s+(?<currency>[A-Za-z]{3}))?$");
 
-    private static final String DEFAULT_CURRENCY = "KZT";
-    private static final DateTimeFormatter FULL_YEAR_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.uuuu");
-    private static final DateTimeFormatter SHORT_YEAR_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.uu");
-    private static final Pattern NORMALIZED_TRANSACTION_LINE = Pattern.compile(
-            "^(?<date>\\d{2}\\.\\d{2}\\.\\d{4})\\s+"
-                    + "(?<description>.+?)\\s+"
-                    + "(?<amount>[+-]?\\s?(?:\\d{1,3}(?:\\s\\d{3})*|\\d+)(?:[.,]\\d+)?)"
-                    + "(?:\\s+(?<currency>[A-Za-z]{3}))?$"
-    );
-    private static final Pattern KASPI_TRANSACTION_LINE = Pattern.compile(
-            "^(?<date>\\d{2}\\.\\d{2}\\.\\d{2})\\s+"
-                    + "(?<amount>[+-]?\\s?(?:\\d{1,3}(?:\\s\\d{3})*|\\d+)(?:[.,]\\d+)?)"
-                    + "(?:\\s+(?:[^\\p{L}\\p{N}\\s]+|[A-Za-z]{3}))?"
-                    + "\\s+(?:Покупка|Пополнение|Перевод)\\s+"
-                    + "(?<description>.+)$"
-    );
-
-    ParsedTransaction parse(String rawLine, int sourceRecordPosition) {
-        if (rawLine == null) {
-            throw new IllegalArgumentException("Строка операции не должна быть null.");
-        }
-
-        String normalizedLine = rawLine.strip();
-        Matcher normalizedMatcher = NORMALIZED_TRANSACTION_LINE.matcher(normalizedLine);
-        if (normalizedMatcher.matches()) {
-            return createTransaction(
-                    normalizedMatcher,
-                    FULL_YEAR_DATE_FORMATTER,
-                    normalizedMatcher.group("currency"),
-                    sourceRecordPosition
-            );
-        }
-
-        Matcher kaspiMatcher = KASPI_TRANSACTION_LINE.matcher(normalizedLine);
-        if (kaspiMatcher.matches()) {
-            return createTransaction(kaspiMatcher, SHORT_YEAR_DATE_FORMATTER, null, sourceRecordPosition);
-        }
-
-        throw new IllegalArgumentException("Некорректный формат строки операции: " + rawLine);
+    ParsedTransaction parse(String rawLine, int position) {
+        if (rawLine == null) throw new IllegalArgumentException("Operation line must not be null");
+        Matcher kaspi = LINE.matcher(rawLine.strip());
+        if (kaspi.matches()) return create(kaspi, DateTimeFormatter.ofPattern("dd.MM.uu"), "KZT", position, operation(kaspi.group("operation")));
+        Matcher full = FULL_LINE.matcher(rawLine.strip());
+        if (full.matches()) return create(full, DateTimeFormatter.ofPattern("dd.MM.uuuu"), full.group("currency"), position, BankOperationType.UNKNOWN);
+        throw new IllegalArgumentException("Invalid operation line: " + rawLine);
     }
 
-    private ParsedTransaction createTransaction(
-            Matcher matcher,
-            DateTimeFormatter dateFormatter,
-            String currency,
-            int sourceRecordPosition
-    ) {
-        try {
-            LocalDate date = LocalDate.parse(matcher.group("date"), dateFormatter);
-            String description = matcher.group("description");
-            BigDecimal amount = new BigDecimal(normalizeAmount(matcher.group("amount")));
-            String resolvedCurrency = resolveCurrency(currency);
-
-            return new ParsedTransaction(date, description, amount, resolvedCurrency, sourceRecordPosition);
-        } catch (DateTimeParseException exception) {
-            throw new IllegalArgumentException("Некорректная дата операции: " + matcher.group("date"), exception);
-        }
+    private ParsedTransaction create(Matcher matcher, DateTimeFormatter formatter, String currency, int position, BankOperationType operationType) {
+        return new ParsedTransaction(LocalDate.parse(matcher.group("date"), formatter), matcher.group("description"),
+                new BigDecimal(matcher.group("amount").replace(" ", "").replace(',', '.')),
+                currency == null ? "KZT" : currency.toUpperCase(Locale.ROOT), operationType, position);
     }
 
-    private String normalizeAmount(String amount) {
-        return amount.replace(" ", "").replace(',', '.');
-    }
-
-    private String resolveCurrency(String currency) {
-        return currency == null ? DEFAULT_CURRENCY : currency.toUpperCase(Locale.ROOT);
+    private BankOperationType operation(String value) {
+        return switch (value) { case "Покупка" -> BankOperationType.PURCHASE; case "Перевод" -> BankOperationType.TRANSFER; case "Пополнение" -> BankOperationType.TOP_UP; default -> BankOperationType.UNKNOWN; };
     }
 }

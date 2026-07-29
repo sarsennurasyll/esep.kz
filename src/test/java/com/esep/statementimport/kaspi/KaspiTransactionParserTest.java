@@ -1,5 +1,6 @@
 package com.esep.statementimport.kaspi;
 
+import com.esep.entity.BankOperationType;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -56,6 +57,21 @@ class KaspiTransactionParserTest {
         assertThat(transaction.description()).isEqualTo("YANDEX.GO");
         assertThat(transaction.amount()).isEqualByComparingTo(new BigDecimal("-4670.00"));
         assertThat(transaction.currency()).isEqualTo("KZT");
+        assertThat(transaction.bankOperationType()).isEqualTo(BankOperationType.PURCHASE);
+    }
+
+    @Test
+    void shouldParseTransferOperationTypeFromKaspiPdfLine() {
+        var transaction = transactionParser.parse("26.07.26 - 1 000,00 ? Перевод Нурбол К.", 0);
+
+        assertThat(transaction.bankOperationType()).isEqualTo(BankOperationType.TRANSFER);
+    }
+
+    @Test
+    void shouldParseTopUpOperationTypeFromKaspiPdfLine() {
+        var transaction = transactionParser.parse("26.07.26 + 5 000,00 ? Пополнение Балауса К.", 0);
+
+        assertThat(transaction.bankOperationType()).isEqualTo(BankOperationType.TOP_UP);
     }
 
     @Test
