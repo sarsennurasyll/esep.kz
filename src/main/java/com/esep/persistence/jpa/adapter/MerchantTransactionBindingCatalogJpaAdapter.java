@@ -1,5 +1,6 @@
 package com.esep.persistence.jpa.adapter;
 
+import com.esep.entity.BankOperationType;
 import com.esep.entity.Merchant;
 import com.esep.entity.Transaction;
 import com.esep.merchantmanagement.interfaces.MerchantTransactionBindingCatalog;
@@ -40,7 +41,10 @@ public class MerchantTransactionBindingCatalogJpaAdapter implements MerchantTran
 
         Merchant merchant = merchantJpaRepository.findById(merchantReferenceJpaMapper.toMerchantId(merchantReference))
                 .orElseThrow(() -> new IllegalArgumentException("Merchant was not found for the reference"));
-        List<Transaction> transactions = transactionJpaRepository.findByMerchantIsNullAndDescriptionIn(descriptions);
+        List<Transaction> transactions = transactionJpaRepository.findByMerchantIsNullAndDescriptionInAndBankOperationTypeIn(
+                descriptions,
+                BankOperationType.withPossibleMerchantCounterparty()
+        );
         transactions.forEach(transaction -> transaction.setMerchant(merchant));
         return transactions.size();
     }

@@ -1,5 +1,6 @@
 package com.esep.merchantmanagement.integration;
 
+import com.esep.entity.BankOperationType;
 import com.esep.entity.BankType;
 import com.esep.entity.Category;
 import com.esep.entity.DetectionSource;
@@ -64,9 +65,34 @@ class MerchantTransactionBindingCatalogJpaAdapterIntegrationTest {
                 .containsExactly("MAGNUM", "MAGNUM", null);
     }
 
+    @Test
+    void shouldNotBindTransfersAndCashOperationsWithSameDescription() {
+        Category category = Category.builder().code("GROCERY").name("Products").active(true).build();
+        entityManager.persist(category);
+        Merchant merchant = Merchant.builder().originalName("TEST STORE").normalizedName("TEST STORE")
+                .category(category).merchantType(MerchantType.STORE).confidence(BigDecimal.ONE)
+                .detectionSource(DetectionSource.DATABASE).verified(true).build();
+        entityManager.persist(merchant);
+        Statement statement = Statement.builder().bankName(BankType.KASPI).originalFileName("test.pdf")
+                .sourceFileHash("e".repeat(64)).periodFrom(LocalDate.of(2026, 7, 1)).periodTo(LocalDate.of(2026, 7, 1)).build();
+        entityManager.persist(statement);
+        entityManager.persist(transaction(statement, "Тестов Т.", "f", BankOperationType.PURCHASE));
+        entityManager.persist(transaction(statement, "Тестов Т.", "g", BankOperationType.TOP_UP));
+        entityManager.persist(transaction(statement, "Тестов Т.", "h", BankOperationType.CASH_WITHDRAWAL));
+        entityManager.flush();
+
+        long bound = bindingCatalog.bindUnknownTransactions(List.of("Тестов Т."), new MerchantReference(merchant.getId().toString()));
+
+        assertThat(bound).isEqualTo(1);
+    }
+
     private Transaction transaction(Statement statement, String description, String fingerprintCharacter) {
+        return transaction(statement, description, fingerprintCharacter, BankOperationType.UNKNOWN);
+    }
+
+    private Transaction transaction(Statement statement, String description, String fingerprintCharacter, BankOperationType operationType) {
         return Transaction.builder().statement(statement).transactionDate(LocalDate.of(2026, 7, 1))
-                .amount(new BigDecimal("-100.00")).currency("KZT").description(description)
+                .amount(new BigDecimal("-100.00")).currency("KZT").description(description).bankOperationType(operationType)
                 .sourceTransactionFingerprint(fingerprintCharacter.repeat(64)).transactionType(TransactionType.EXPENSE).build();
     }
 }

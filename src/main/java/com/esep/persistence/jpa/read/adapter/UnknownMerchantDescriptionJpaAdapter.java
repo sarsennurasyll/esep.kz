@@ -1,5 +1,6 @@
 package com.esep.persistence.jpa.read.adapter;
 
+import com.esep.entity.BankOperationType;
 import com.esep.merchantmanagement.interfaces.UnknownMerchantDescriptionQuery;
 import com.esep.merchantmanagement.model.UnknownMerchantCandidate;
 import com.esep.persistence.jpa.read.repository.UnknownMerchantReadJpaRepository;
@@ -21,7 +22,7 @@ public class UnknownMerchantDescriptionJpaAdapter implements UnknownMerchantDesc
 
     @Override
     public List<UnknownMerchantCandidate> findAll() {
-        return unknownMerchantReadJpaRepository.findUnknownDescriptions().stream()
+        return unknownMerchantReadJpaRepository.findUnknownDescriptions(BankOperationType.withPossibleMerchantCounterparty()).stream()
                 .map(result -> new UnknownMerchantCandidate(result.getDescription(), result.getUsageCount(),
                         result.getTotalAmount(), result.getLastTransactionDate(), result.getNewInLatestStatement()))
                 .toList();
