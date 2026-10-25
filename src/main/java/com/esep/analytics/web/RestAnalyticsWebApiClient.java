@@ -5,6 +5,7 @@ import com.esep.analytics.api.dto.CategoryOperationCountResponse;
 import com.esep.analytics.api.dto.CategoryExpenseResponse;
 import com.esep.analytics.api.dto.MerchantExpenseResponse;
 import com.esep.analytics.api.dto.MerchantTypeExpenseResponse;
+import com.esep.analytics.api.dto.MoneyFlowReportResponse;
 import com.esep.analytics.api.dto.MonthlyAnalyticsResponse;
 import com.esep.analytics.api.dto.PersonTransferResponse;
 import org.springframework.beans.factory.annotation.Value;
@@ -73,5 +74,10 @@ public class RestAnalyticsWebApiClient implements AnalyticsWebApiClient {
     @Override
     public List<MonthlyAnalyticsResponse> getMonthlyAnalytics() {
         return Arrays.asList(restClient.get().uri("/monthly").retrieve().body(MonthlyAnalyticsResponse[].class));
+    }
+
+    @Override
+    public MoneyFlowReportResponse getMoneyFlowReport() {
+        return restClient.get().uri("/money-flow").retrieve().body(MoneyFlowReportResponse.class);
     }
 }

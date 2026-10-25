@@ -5,6 +5,7 @@ import com.esep.analytics.api.dto.CategoryOperationCountResponse;
 import com.esep.analytics.api.dto.CategoryExpenseResponse;
 import com.esep.analytics.api.dto.MerchantExpenseResponse;
 import com.esep.analytics.api.dto.MerchantTypeExpenseResponse;
+import com.esep.analytics.api.dto.MoneyFlowReportResponse;
 import com.esep.analytics.api.dto.MonthlyAnalyticsResponse;
 import com.esep.analytics.api.dto.PersonTransferResponse;
 import com.esep.analytics.interfaces.AnalyticsService;
@@ -82,5 +83,11 @@ public class AnalyticsController {
         return analyticsService.getMonthlyAnalytics().stream()
                 .map(MonthlyAnalyticsResponse::from)
                 .toList();
+    }
+
+    @GetMapping("/money-flow")
+    @Operation(summary = "Получить отчёт о движении денег: доход, расход, свои деньги и суммы с неизвестным назначением")
+    public MoneyFlowReportResponse getMoneyFlowReport() {
+        return MoneyFlowReportResponse.from(analyticsService.getMoneyFlowReport());
     }
 }

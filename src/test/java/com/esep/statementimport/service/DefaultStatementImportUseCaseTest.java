@@ -15,6 +15,9 @@ import com.esep.statementimport.interfaces.StatementParserRegistry;
 import com.esep.statementimport.model.ParsedStatement;
 import com.esep.statementimport.model.ParsedTransaction;
 import com.esep.statementimport.model.StatementImportResult;
+import com.esep.moneyflow.model.ClassificationSource;
+import com.esep.moneyflow.service.MoneyFlowClassifierRegistry;
+import com.esep.statementimport.kaspi.KaspiMoneyFlowClassifier;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -75,6 +78,9 @@ class DefaultStatementImportUseCaseTest {
         assertThat(transactionCatalog.savedTransactions).hasSize(2);
         assertThat(transactionCatalog.savedTransactions.getFirst().merchantReference().value()).isEqualTo("1");
         assertThat(transactionCatalog.savedTransactions.get(1).merchantReference()).isNull();
+        assertThat(transactionCatalog.savedTransactions)
+                .extracting(command -> command.moneyFlow().source())
+                .containsOnly(ClassificationSource.BANK_RULE);
         verify(recognitionService, times(1)).recognize("MAGNUM");
         verify(recognitionService, times(1)).recognize("UNKNOWN SHOP");
     }
@@ -115,6 +121,7 @@ class DefaultStatementImportUseCaseTest {
                 processor,
                 new TransactionFingerprintGenerator(),
                 new StatementPeriodResolver(),
+                new MoneyFlowClassifierRegistry(List.of(new KaspiMoneyFlowClassifier())),
                 statementCatalog,
                 transactionCatalog
         );

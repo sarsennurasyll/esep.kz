@@ -2,6 +2,7 @@ package com.esep.statementimport.service;
 
 import com.esep.entity.BankType;
 import com.esep.entity.TransactionType;
+import com.esep.moneyflow.service.MoneyFlowClassifierRegistry;
 import com.esep.persistence.interfaces.StatementCatalog;
 import com.esep.persistence.interfaces.TransactionCatalog;
 import com.esep.persistence.model.StatementPersistenceCommand;
@@ -30,6 +31,7 @@ public class DefaultStatementImportUseCase {
     private final TransactionImportProcessor transactionImportProcessor;
     private final TransactionFingerprintGenerator transactionFingerprintGenerator;
     private final StatementPeriodResolver statementPeriodResolver;
+    private final MoneyFlowClassifierRegistry moneyFlowClassifierRegistry;
     private final StatementCatalog statementCatalog;
     private final TransactionCatalog transactionCatalog;
 
@@ -39,6 +41,7 @@ public class DefaultStatementImportUseCase {
             TransactionImportProcessor transactionImportProcessor,
             TransactionFingerprintGenerator transactionFingerprintGenerator,
             StatementPeriodResolver statementPeriodResolver,
+            MoneyFlowClassifierRegistry moneyFlowClassifierRegistry,
             StatementCatalog statementCatalog,
             TransactionCatalog transactionCatalog
     ) {
@@ -47,6 +50,7 @@ public class DefaultStatementImportUseCase {
         this.transactionImportProcessor = transactionImportProcessor;
         this.transactionFingerprintGenerator = transactionFingerprintGenerator;
         this.statementPeriodResolver = statementPeriodResolver;
+        this.moneyFlowClassifierRegistry = moneyFlowClassifierRegistry;
         this.statementCatalog = statementCatalog;
         this.transactionCatalog = transactionCatalog;
     }
@@ -77,7 +81,7 @@ public class DefaultStatementImportUseCase {
         transactionCatalog.saveAll(
                 sourceFileHash,
                 processedTransactions.stream()
-                        .map(transaction -> toTransactionCommand(transaction, sourceFileHash))
+                        .map(transaction -> toTransactionCommand(transaction, bankType, sourceFileHash))
                         .toList()
         );
 
@@ -87,6 +91,7 @@ public class DefaultStatementImportUseCase {
                 importResult.totalTransactions(),
                 importResult.recognizedMerchants(),
                 importResult.unknownMerchants(),
+                importResult.withoutMerchantOperations(),
                 statementPeriod.periodFrom(),
                 statementPeriod.periodTo()
         );
@@ -111,6 +116,7 @@ public class DefaultStatementImportUseCase {
 
     private TransactionPersistenceCommand toTransactionCommand(
             ProcessedTransaction processedTransaction,
+            BankType bankType,
             String sourceFileHash
     ) {
         var transaction = processedTransaction.transaction();
@@ -123,6 +129,12 @@ public class DefaultStatementImportUseCase {
                 transaction.currency(),
                 financialTransactionType(transaction),
                 transaction.bankOperationType(),
+                moneyFlowClassifierRegistry.classify(
+                        bankType,
+                        transaction.bankOperationType(),
+                        transaction.amount(),
+                        transaction.description()
+                ),
                 recognition.merchantMatch().merchantReference(),
                 transactionFingerprintGenerator.generate(
                         sourceFileHash,

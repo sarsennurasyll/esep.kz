@@ -66,6 +66,40 @@ class FlywayMigrationsPostgresTest {
                 where merchant.merchant_type <> 'PERSON'""")).isEqualTo(organizationAliasesBefore);
     }
 
+    @Test
+    void shouldBackfillMoneyFlowForExistingKaspiOperations() {
+        flyway("11").migrate();
+        jdbc.update("""
+                insert into statements (bank_name, original_file_name, source_file_hash, uploaded_at, period_from, period_to)
+                values ('KASPI', 'synthetic.pdf', repeat('c', 64), now(), date '2026-08-01', date '2026-08-31')""");
+        insertOperation("-1000", "PURCHASE", "TEST STORE", "1");
+        insertOperation("500", "PURCHASE", "TEST STORE", "2");
+        insertOperation("10000", "TOP_UP", "В Kaspi Банкомате", "3");
+        insertOperation("5000", "TOP_UP", "Тестов Т.", "4");
+        insertOperation("5000", "TOP_UP", "С карты другого банка", "5");
+        insertOperation("-9000", "CASH_WITHDRAWAL", "Банкомат TEST", "6");
+        insertOperation("-300", "OTHER", "Плата за обслуживание", "7");
+        insertOperation("-2000", "TRANSFER", "Тестова А.", "8");
+
+        flyway(null).migrate();
+
+        assertThat(jdbc.queryForList("""
+                select flow_type || ':' || flow_confidence from transactions order by source_transaction_fingerprint""", String.class))
+                .containsExactly(
+                        "PURCHASE:HIGH", "PURCHASE_REFUND:HIGH", "CASH_DEPOSIT:HIGH", "TRANSFER_FROM_PERSON:MEDIUM",
+                        "UNKNOWN:NONE", "CASH_WITHDRAWAL:HIGH", "BANK_FEE:MEDIUM", "TRANSFER_TO_PERSON:MEDIUM"
+                );
+        assertThat(count("select count(*) from transactions where purpose <> 'UNKNOWN' or purpose_source <> 'NONE'")).isZero();
+    }
+
+    private void insertOperation(String amount, String bankOperationType, String description, String fingerprint) {
+        jdbc.update("""
+                insert into transactions (amount, currency, transaction_date, source_transaction_fingerprint, description,
+                                          transaction_type, bank_operation_type, statement_id)
+                values (?::numeric, 'KZT', date '2026-08-02', repeat(?, 64), ?, 'UNKNOWN', ?, (select id from statements))""",
+                amount, fingerprint, description, bankOperationType);
+    }
+
     private void insertSyntheticPersonWithTransfer() {
         jdbc.update("""
                 insert into statements (bank_name, original_file_name, source_file_hash, uploaded_at, period_from, period_to)

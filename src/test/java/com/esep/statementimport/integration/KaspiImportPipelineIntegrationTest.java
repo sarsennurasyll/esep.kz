@@ -44,14 +44,15 @@ class KaspiImportPipelineIntegrationTest {
             var importResult = statementImporter.importStatement(statement);
 
             long expectedRecognizedMerchants = statement.transactions().stream()
+                    .filter(transaction -> transaction.bankOperationType().merchantCounterpartyPossible())
                     .filter(transaction -> recognitionService.recognize(transaction.description()).merchantMatch().matched())
                     .count();
 
             assertThat(statement.transactions()).isNotEmpty();
             assertThat(importResult.totalTransactions()).isEqualTo(statement.transactions().size());
             assertThat(importResult.recognizedMerchants()).isEqualTo(expectedRecognizedMerchants);
-            assertThat(importResult.unknownMerchants())
-                    .isEqualTo(importResult.totalTransactions() - importResult.recognizedMerchants());
+            assertThat(importResult.recognizedMerchants() + importResult.unknownMerchants() + importResult.withoutMerchantOperations())
+                    .isEqualTo(importResult.totalTransactions());
             assertRecognizedIfPresent(statement, "MAGNUM CASH&CARRY");
             assertRecognizedIfPresent(statement, "YANDEX.GO");
             assertRecognizedIfPresent(statement, "EUROPHARMA");

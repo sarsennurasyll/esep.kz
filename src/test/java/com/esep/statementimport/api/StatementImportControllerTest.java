@@ -45,9 +45,10 @@ class StatementImportControllerTest {
         when(statementImportUseCase.importStatement(any(InputStream.class), eq(BankType.KASPI), eq("statement.pdf")))
                 .thenReturn(new StatementImportResult(
                         42L,
-                        4,
+                        6,
                         3,
                         1,
+                        2,
                         LocalDate.of(2026, 7, 1),
                         LocalDate.of(2026, 7, 31)
                 ));
@@ -57,9 +58,10 @@ class StatementImportControllerTest {
                         .param("bankType", "KASPI"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statementId").value(42))
-                .andExpect(jsonPath("$.operationsTotal").value(4))
+                .andExpect(jsonPath("$.operationsTotal").value(6))
                 .andExpect(jsonPath("$.recognizedOperations").value(3))
                 .andExpect(jsonPath("$.unknownOperations").value(1))
+                .andExpect(jsonPath("$.withoutMerchantOperations").value(2))
                 .andExpect(jsonPath("$.periodFrom").value("2026-07-01"))
                 .andExpect(jsonPath("$.periodTo").value("2026-07-31"));
     }
@@ -145,7 +147,7 @@ class StatementImportControllerTest {
     @Test
     void shouldAcceptImportFromOwnOrigin() throws Exception {
         when(statementImportUseCase.importStatement(any(InputStream.class), eq(BankType.KASPI), eq("statement.pdf")))
-                .thenReturn(new StatementImportResult(42L, 1, 1, 0, LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31)));
+                .thenReturn(new StatementImportResult(42L, 1, 1, 0, 0, LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31)));
 
         mockMvc.perform(multipart("/api/statements/import")
                         .file(pdfFile("statement.pdf", "content"))

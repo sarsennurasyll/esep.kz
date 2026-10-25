@@ -26,6 +26,8 @@ import com.esep.statementimport.service.DefaultStatementImporter;
 import com.esep.statementimport.service.StatementPeriodResolver;
 import com.esep.statementimport.service.TransactionFingerprintGenerator;
 import com.esep.statementimport.service.TransactionImportProcessor;
+import com.esep.moneyflow.service.MoneyFlowClassifierRegistry;
+import com.esep.statementimport.kaspi.KaspiMoneyFlowClassifier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
@@ -71,6 +73,7 @@ class StatementImportUseCaseIntegrationTest {
                 new TransactionImportProcessor(recognitionService),
                 new TransactionFingerprintGenerator(),
                 new StatementPeriodResolver(),
+                new MoneyFlowClassifierRegistry(List.of(new KaspiMoneyFlowClassifier())),
                 statementCatalog,
                 transactionCatalog
         );

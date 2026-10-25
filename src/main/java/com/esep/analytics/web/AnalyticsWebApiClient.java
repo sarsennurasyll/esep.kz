@@ -5,6 +5,7 @@ import com.esep.analytics.api.dto.CategoryOperationCountResponse;
 import com.esep.analytics.api.dto.CategoryExpenseResponse;
 import com.esep.analytics.api.dto.MerchantExpenseResponse;
 import com.esep.analytics.api.dto.MerchantTypeExpenseResponse;
+import com.esep.analytics.api.dto.MoneyFlowReportResponse;
 import com.esep.analytics.api.dto.MonthlyAnalyticsResponse;
 import com.esep.analytics.api.dto.PersonTransferResponse;
 
@@ -28,4 +29,6 @@ public interface AnalyticsWebApiClient {
     List<PersonTransferResponse> getTopPersonTransfers();
 
     List<MonthlyAnalyticsResponse> getMonthlyAnalytics();
+
+    MoneyFlowReportResponse getMoneyFlowReport();
 }

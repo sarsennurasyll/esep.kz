@@ -9,6 +9,7 @@ import com.esep.analytics.model.MerchantTypeExpense;
 import com.esep.analytics.model.MonthlyAnalytics;
 import com.esep.analytics.model.PersonTransfer;
 import com.esep.entity.MerchantType;
+import com.esep.moneyflow.model.MoneyFlowTotal;
 import com.esep.persistence.jpa.read.repository.AnalyticsStatementReadJpaRepository;
 import com.esep.persistence.jpa.read.repository.AnalyticsTransactionReadJpaRepository;
 import org.springframework.data.domain.PageRequest;
@@ -124,5 +125,18 @@ public class AnalyticsQueryJpaAdapter implements AnalyticsQuery {
 
     private BigDecimal zeroIfNull(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value;
+    }
+
+    @Override
+    public List<MoneyFlowTotal> getMoneyFlowTotals() {
+        return transactionReadJpaRepository.findMoneyFlowTotals().stream()
+                .map(result -> new MoneyFlowTotal(
+                        result.getFlowType(),
+                        result.getPurpose(),
+                        zeroIfNull(result.getInflow()),
+                        zeroIfNull(result.getOutflow()),
+                        result.getOperationCount()
+                ))
+                .toList();
     }
 }

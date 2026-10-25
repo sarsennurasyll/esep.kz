@@ -6,12 +6,15 @@ import com.esep.merchantresolver.interfaces.MerchantAliasCatalog;
 import com.esep.merchantresolver.interfaces.MerchantCatalog;
 import com.esep.merchantresolver.interfaces.MerchantResolver;
 import com.esep.merchantresolver.service.InMemoryMerchantResolver;
+import com.esep.moneyflow.interfaces.MoneyFlowClassifier;
+import com.esep.moneyflow.service.MoneyFlowClassifierRegistry;
 import com.esep.normalization.interfaces.MerchantNormalizer;
 import com.esep.normalization.service.DefaultMerchantNormalizer;
 import com.esep.persistence.interfaces.StatementCatalog;
 import com.esep.persistence.interfaces.TransactionCatalog;
 import com.esep.statementimport.interfaces.StatementParser;
 import com.esep.statementimport.interfaces.StatementParserRegistry;
+import com.esep.statementimport.kaspi.KaspiMoneyFlowClassifier;
 import com.esep.statementimport.kaspi.KaspiStatementParser;
 import com.esep.statementimport.pdf.PdfBoxTextExtractor;
 import com.esep.statementimport.pdf.PdfTextExtractor;
@@ -90,12 +93,23 @@ public class StatementImportConfiguration {
     }
 
     @Bean
+    MoneyFlowClassifier kaspiMoneyFlowClassifier() {
+        return new KaspiMoneyFlowClassifier();
+    }
+
+    @Bean
+    MoneyFlowClassifierRegistry moneyFlowClassifierRegistry(List<MoneyFlowClassifier> moneyFlowClassifiers) {
+        return new MoneyFlowClassifierRegistry(moneyFlowClassifiers);
+    }
+
+    @Bean
     DefaultStatementImportUseCase statementImportUseCase(
             StatementParserRegistry statementParserRegistry,
             DefaultStatementImporter statementImporter,
             TransactionImportProcessor transactionImportProcessor,
             TransactionFingerprintGenerator transactionFingerprintGenerator,
             StatementPeriodResolver statementPeriodResolver,
+            MoneyFlowClassifierRegistry moneyFlowClassifierRegistry,
             StatementCatalog statementCatalog,
             TransactionCatalog transactionCatalog
     ) {
@@ -105,6 +119,7 @@ public class StatementImportConfiguration {
                 transactionImportProcessor,
                 transactionFingerprintGenerator,
                 statementPeriodResolver,
+                moneyFlowClassifierRegistry,
                 statementCatalog,
                 transactionCatalog
         );

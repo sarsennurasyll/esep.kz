@@ -8,6 +8,8 @@ import com.esep.analytics.model.MerchantTypeExpense;
 import com.esep.analytics.model.MonthlyAnalytics;
 import com.esep.analytics.model.PersonTransfer;
 
+import com.esep.moneyflow.model.MoneyFlowTotal;
+
 import java.util.List;
 
 /**
@@ -28,4 +30,6 @@ public interface AnalyticsQuery {
     List<PersonTransfer> getTopPersonTransfers();
 
     List<MonthlyAnalytics> getMonthlyAnalytics();
+
+    List<MoneyFlowTotal> getMoneyFlowTotals();
 }

@@ -19,6 +19,7 @@ public class DashboardWebController {
     @GetMapping("/")
     public String dashboard(Model model) {
         model.addAttribute("summary", analyticsWebApiClient.getSummary());
+        model.addAttribute("moneyFlow", analyticsWebApiClient.getMoneyFlowReport());
         model.addAttribute("categories", analyticsWebApiClient.getCategoryExpenses());
         model.addAttribute("categoryCounts", analyticsWebApiClient.getCategoryOperationCounts());
         model.addAttribute("merchants", analyticsWebApiClient.getTopMerchants());

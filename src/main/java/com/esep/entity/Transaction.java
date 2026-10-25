@@ -1,5 +1,9 @@
 package com.esep.entity;
 
+import com.esep.moneyflow.model.ClassificationConfidence;
+import com.esep.moneyflow.model.ClassificationSource;
+import com.esep.moneyflow.model.MoneyFlowType;
+import com.esep.moneyflow.model.MoneyPurpose;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -80,6 +84,36 @@ public class Transaction {
     @Column(nullable = false, length = 20)
     @Builder.Default
     private BankOperationType bankOperationType = BankOperationType.UNKNOWN;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    @Builder.Default
+    private MoneyFlowType flowType = MoneyFlowType.UNKNOWN;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private ClassificationSource flowSource = ClassificationSource.NONE;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    @Builder.Default
+    private ClassificationConfidence flowConfidence = ClassificationConfidence.NONE;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private MoneyPurpose purpose = MoneyPurpose.UNKNOWN;
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private ClassificationSource purposeSource = ClassificationSource.NONE;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "merchant_id")

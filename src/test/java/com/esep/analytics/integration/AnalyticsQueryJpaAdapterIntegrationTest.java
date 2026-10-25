@@ -9,7 +9,11 @@ import com.esep.entity.MerchantType;
 import com.esep.entity.Statement;
 import com.esep.entity.Transaction;
 import com.esep.entity.TransactionType;
+import com.esep.moneyflow.model.MoneyFlowTotal;
+import com.esep.moneyflow.model.MoneyFlowType;
+import com.esep.moneyflow.model.MoneyPurpose;
 import com.esep.persistence.jpa.read.adapter.AnalyticsQueryJpaAdapter;
+import org.assertj.core.api.recursive.comparison.RecursiveComparisonConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -130,6 +134,42 @@ class AnalyticsQueryJpaAdapterIntegrationTest {
                 .build();
         entityManager.persist(statement);
         return statement;
+    }
+
+    @Test
+    void shouldAggregateMoneyFlowTotalsByFlowTypeAndPurpose() {
+        Statement statement = statement("z");
+        flowTransaction(statement, MoneyFlowType.PURCHASE, MoneyPurpose.UNKNOWN, "-100.00", "m");
+        flowTransaction(statement, MoneyFlowType.PURCHASE, MoneyPurpose.UNKNOWN, "-50.00", "n");
+        flowTransaction(statement, MoneyFlowType.PURCHASE_REFUND, MoneyPurpose.UNKNOWN, "20.00", "o");
+        flowTransaction(statement, MoneyFlowType.CASH_DEPOSIT, MoneyPurpose.UNKNOWN, "300.00", "p");
+        flowTransaction(statement, MoneyFlowType.TRANSFER_FROM_PERSON, MoneyPurpose.INCOME_WORK, "400.00", "q");
+        entityManager.flush();
+
+        assertThat(analyticsQuery.getMoneyFlowTotals())
+                .usingRecursiveFieldByFieldElementComparator(RecursiveComparisonConfiguration.builder()
+                        .withComparatorForType(BigDecimal::compareTo, BigDecimal.class)
+                        .build())
+                .containsExactlyInAnyOrder(
+                new MoneyFlowTotal(MoneyFlowType.PURCHASE, MoneyPurpose.UNKNOWN, new BigDecimal("0.00"), new BigDecimal("150.00"), 2),
+                new MoneyFlowTotal(MoneyFlowType.PURCHASE_REFUND, MoneyPurpose.UNKNOWN, new BigDecimal("20.00"), new BigDecimal("0.00"), 1),
+                new MoneyFlowTotal(MoneyFlowType.CASH_DEPOSIT, MoneyPurpose.UNKNOWN, new BigDecimal("300.00"), new BigDecimal("0.00"), 1),
+                new MoneyFlowTotal(MoneyFlowType.TRANSFER_FROM_PERSON, MoneyPurpose.INCOME_WORK, new BigDecimal("400.00"), new BigDecimal("0.00"), 1)
+        );
+    }
+
+    private void flowTransaction(Statement statement, MoneyFlowType flowType, MoneyPurpose purpose, String amount, String fingerprintCharacter) {
+        entityManager.persist(Transaction.builder()
+                .statement(statement)
+                .transactionDate(LocalDate.of(2026, 8, 2))
+                .amount(new BigDecimal(amount))
+                .currency("KZT")
+                .description("Operation " + fingerprintCharacter)
+                .sourceTransactionFingerprint(fingerprintCharacter.repeat(64))
+                .transactionType(TransactionType.UNKNOWN)
+                .flowType(flowType)
+                .purpose(purpose)
+                .build());
     }
 
     private void transaction(

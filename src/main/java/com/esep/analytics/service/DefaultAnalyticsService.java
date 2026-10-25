@@ -8,6 +8,8 @@ import com.esep.analytics.model.CategoryExpense;
 import com.esep.analytics.model.MerchantExpense;
 import com.esep.analytics.model.MerchantTypeExpense;
 import com.esep.analytics.model.MonthlyAnalytics;
+import com.esep.moneyflow.model.MoneyFlowReport;
+import com.esep.moneyflow.service.MoneyFlowReportCalculator;
 import com.esep.analytics.model.PersonTransfer;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +24,7 @@ import java.util.List;
 public class DefaultAnalyticsService implements AnalyticsService {
 
     private final AnalyticsQuery analyticsQuery;
+    private final MoneyFlowReportCalculator moneyFlowReportCalculator = new MoneyFlowReportCalculator();
 
     public DefaultAnalyticsService(AnalyticsQuery analyticsQuery) {
         this.analyticsQuery = analyticsQuery;
@@ -85,5 +88,10 @@ public class DefaultAnalyticsService implements AnalyticsService {
     @Override
     public List<MonthlyAnalytics> getMonthlyAnalytics() {
         return analyticsQuery.getMonthlyAnalytics();
+    }
+
+    @Override
+    public MoneyFlowReport getMoneyFlowReport() {
+        return moneyFlowReportCalculator.calculate(analyticsQuery.getMoneyFlowTotals());
     }
 }

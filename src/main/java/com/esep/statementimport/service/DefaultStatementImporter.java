@@ -35,15 +35,18 @@ public class DefaultStatementImporter implements StatementImporter {
     }
 
     ImportResult createImportResult(List<ProcessedTransaction> processedTransactions) {
-        int recognizedMerchants = (int) processedTransactions.stream()
+        List<ProcessedTransaction> merchantCandidates = processedTransactions.stream()
+                .filter(transaction -> transaction.transaction().bankOperationType().merchantCounterpartyPossible())
+                .toList();
+        int recognizedMerchants = (int) merchantCandidates.stream()
                 .filter(transaction -> transaction.merchantRecognition().merchantMatch().matched())
                 .count();
-        int unknownMerchants = processedTransactions.size() - recognizedMerchants;
 
         return new ImportResult(
                 processedTransactions.size(),
                 recognizedMerchants,
-                unknownMerchants
+                merchantCandidates.size() - recognizedMerchants,
+                processedTransactions.size() - merchantCandidates.size()
         );
     }
 }
