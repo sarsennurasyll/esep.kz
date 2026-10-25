@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "hybrid/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      # Тесты используют H2 и одноразовую PostgreSQL через Testcontainers; реальные выписки в CI не используются.
+      - name: Test
+        run: mvn -B -ntp test
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: target/surefire-reports
+          retention-days: 7
