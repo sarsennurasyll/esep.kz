@@ -21,9 +21,9 @@ Before implementation, verify the following:
 3. Existing abstractions can be extended instead of modified.
 4. The change follows SOLID, Clean Architecture, and DDD principles where applicable.
 5. The change does not introduce unnecessary coupling to a specific bank, file type, parser, or AI provider.
-6. The scope contains only work explicitly requested by the user.
+6. The scope contains only work requested by the owner or required by the current roadmap and ADRs.
 
-If an architectural improvement is useful but outside the requested scope, do not apply it automatically. Explain the problem, its long-term benefit, and propose it as a separate step. Request confirmation when the improvement changes architecture or scope materially.
+Agents own technical and architectural decisions within the agreed product strategy: compare alternatives, choose the most justified option, record it in an ADR, implement, and verify. Ask the owner only for the cases listed in `CLAUDE.md` (spending money, publishing to real users, sending data to external services, irreversible actions on real user data, product-goal changes that depend on unvalidated demand, forbidden Git operations, missing secrets).
 
 ## Architecture Principles
 
@@ -73,7 +73,7 @@ Examples of future features include statement import, merchant knowledge, transa
 - Write comments only when they add necessary context; comments must be in Russian unless an external standard requires otherwise.
 - Prefer clear, small, cohesive classes over clever or compressed code.
 - Avoid speculative functionality, unused abstractions, and unrequested dependencies.
-- Do not implement AI, PDF parsing, APIs, persistence operations, or CRUD unless explicitly requested.
+- Do not implement AI, PDF parsing, APIs, persistence operations, or CRUD unless the current roadmap requires them.
 - Keep business rules deterministic and testable before introducing AI assistance.
 
 ## Development Rules
