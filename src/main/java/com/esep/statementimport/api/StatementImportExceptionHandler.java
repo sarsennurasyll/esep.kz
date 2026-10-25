@@ -1,11 +1,6 @@
 package com.esep.statementimport.api;
 
 import com.esep.common.api.ApiErrorResponse;
-import com.esep.parser.common.ParserException;
-import com.esep.statementimport.exception.StatementAlreadyImportedException;
-import com.esep.statementimport.exception.StatementFormatException;
-import com.esep.statementimport.exception.StatementWithoutTransactionsException;
-import com.esep.statementimport.pdf.PdfExtractionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -24,35 +19,12 @@ public class StatementImportExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(StatementImportExceptionHandler.class);
 
-    @ExceptionHandler(StatementAlreadyImportedException.class)
-    ResponseEntity<ApiErrorResponse> handleAlreadyImported(StatementAlreadyImportedException exception) {
-        return error(HttpStatus.CONFLICT, exception);
-    }
-
-    @ExceptionHandler(StatementWithoutTransactionsException.class)
-    ResponseEntity<ApiErrorResponse> handleWithoutTransactions(StatementWithoutTransactionsException exception) {
-        return error(HttpStatus.BAD_REQUEST, exception);
-    }
-
-    @ExceptionHandler({
-            StatementFormatException.class,
-            PdfExtractionException.class,
-            ParserException.class,
-            IllegalArgumentException.class
-    })
-    ResponseEntity<ApiErrorResponse> handleParserError(RuntimeException exception) {
-        return error(HttpStatus.BAD_REQUEST, exception);
-    }
-
-    // Текст непредвиденного исключения может содержать данные выписки, поэтому клиент получает общее сообщение.
     @ExceptionHandler(Exception.class)
-    ResponseEntity<ApiErrorResponse> handleUnexpected(Exception exception) {
-        log.error("Непредвиденная ошибка при обработке запроса к API выписок: {}", exception.getClass().getName());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(new ApiErrorResponse("Внутренняя ошибка сервера"));
-    }
-
-    private ResponseEntity<ApiErrorResponse> error(HttpStatus status, Exception exception) {
-        return ResponseEntity.status(status).body(new ApiErrorResponse(exception.getMessage()));
+    ResponseEntity<ApiErrorResponse> handle(Exception exception) {
+        HttpStatus status = StatementApiErrors.statusOf(exception);
+        if (status.is5xxServerError()) {
+            log.error("Непредвиденная ошибка при обработке запроса к API выписок: {}", exception.getClass().getName());
+        }
+        return ResponseEntity.status(status).body(new ApiErrorResponse(StatementApiErrors.clientMessageOf(exception)));
     }
 }
