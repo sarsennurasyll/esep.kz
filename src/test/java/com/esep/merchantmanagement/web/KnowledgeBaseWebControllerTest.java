@@ -1,5 +1,7 @@
 package com.esep.merchantmanagement.web;
 
+import com.esep.security.LocalSecurityConfiguration;
+import org.springframework.context.annotation.Import;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -14,6 +16,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(KnowledgeBaseWebController.class)
+@Import(LocalSecurityConfiguration.class)
 class KnowledgeBaseWebControllerTest {
 
     @Autowired

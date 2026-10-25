@@ -1,5 +1,7 @@
 package com.esep.merchantmanagement.api;
 
+import com.esep.security.LocalSecurityConfiguration;
+import org.springframework.context.annotation.Import;
 import com.esep.entity.MerchantType;
 import com.esep.merchantmanagement.model.KnowledgeBaseMerchant;
 import com.esep.merchantmanagement.service.DefaultMerchantManagementService;
@@ -24,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(KnowledgeBaseMerchantController.class)
+@Import(LocalSecurityConfiguration.class)
 class KnowledgeBaseMerchantControllerTest {
 
     @Autowired

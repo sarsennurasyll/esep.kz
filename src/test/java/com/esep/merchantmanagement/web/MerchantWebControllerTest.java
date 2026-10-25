@@ -1,5 +1,7 @@
 package com.esep.merchantmanagement.web;
 
+import com.esep.security.LocalSecurityConfiguration;
+import org.springframework.context.annotation.Import;
 import com.esep.merchantmanagement.api.dto.MerchantResponse;
 import com.esep.merchantmanagement.api.dto.UnknownMerchantResponse;
 import com.esep.merchantmanagement.api.dto.MerchantLearningStatisticsResponse;
@@ -12,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -22,6 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @WebMvcTest(MerchantWebController.class)
+@Import(LocalSecurityConfiguration.class)
 class MerchantWebControllerTest {
 
     @Autowired
@@ -53,7 +57,8 @@ class MerchantWebControllerTest {
 
         mockMvc.perform(post("/merchants/match")
                         .param("normalizedDescription", "UNKNOWN SHOP")
-                        .param("merchantId", "42"))
+                        .param("merchantId", "42")
+                        .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(view().name("redirect:/merchants"))
                 .andExpect(flash().attributeExists("successMessage"));

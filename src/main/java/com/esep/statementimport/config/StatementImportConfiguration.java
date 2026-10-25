@@ -21,6 +21,7 @@ import com.esep.statementimport.service.DefaultStatementImporter;
 import com.esep.statementimport.service.StatementPeriodResolver;
 import com.esep.statementimport.service.TransactionFingerprintGenerator;
 import com.esep.statementimport.service.TransactionImportProcessor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -33,8 +34,8 @@ import java.util.List;
 public class StatementImportConfiguration {
 
     @Bean
-    PdfTextExtractor pdfTextExtractor() {
-        return new PdfBoxTextExtractor();
+    PdfTextExtractor pdfTextExtractor(@Value("${esep.import.max-pdf-pages}") int maxPdfPages) {
+        return new PdfBoxTextExtractor(maxPdfPages);
     }
 
     @Bean

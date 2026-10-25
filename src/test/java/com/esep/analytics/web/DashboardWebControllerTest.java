@@ -1,5 +1,7 @@
 package com.esep.analytics.web;
 
+import com.esep.security.LocalSecurityConfiguration;
+import org.springframework.context.annotation.Import;
 import com.esep.analytics.api.dto.AnalyticsSummaryResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @WebMvcTest(DashboardWebController.class)
+@Import(LocalSecurityConfiguration.class)
 class DashboardWebControllerTest {
 
     @Autowired

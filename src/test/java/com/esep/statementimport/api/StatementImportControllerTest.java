@@ -1,5 +1,7 @@
 package com.esep.statementimport.api;
 
+import com.esep.security.LocalSecurityConfiguration;
+import org.springframework.context.annotation.Import;
 import com.esep.entity.BankType;
 import com.esep.statementimport.exception.StatementAlreadyImportedException;
 import com.esep.statementimport.exception.StatementFormatException;
@@ -22,12 +24,14 @@ import java.time.LocalDate;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(StatementImportController.class)
+@Import(LocalSecurityConfiguration.class)
 class StatementImportControllerTest {
 
     @Autowired
@@ -125,6 +129,29 @@ class StatementImportControllerTest {
                         .param("bankType", "KASPI"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.message").value("Внутренняя ошибка сервера"));
+    }
+
+    @Test
+    void shouldRejectCrossOriginImportFromBrowser() throws Exception {
+        mockMvc.perform(multipart("/api/statements/import")
+                        .file(pdfFile("statement.pdf", "content"))
+                        .param("bankType", "KASPI")
+                        .header("Origin", "https://attacker.example"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(statementImportUseCase);
+    }
+
+    @Test
+    void shouldAcceptImportFromOwnOrigin() throws Exception {
+        when(statementImportUseCase.importStatement(any(InputStream.class), eq(BankType.KASPI), eq("statement.pdf")))
+                .thenReturn(new StatementImportResult(42L, 1, 1, 0, LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31)));
+
+        mockMvc.perform(multipart("/api/statements/import")
+                        .file(pdfFile("statement.pdf", "content"))
+                        .param("bankType", "KASPI")
+                        .header("Origin", "http://localhost"))
+                .andExpect(status().isOk());
     }
 
     private MockMultipartFile pdfFile(String fileName, String content) {

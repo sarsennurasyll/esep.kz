@@ -1,5 +1,7 @@
 package com.esep.analytics.api;
 
+import com.esep.security.LocalSecurityConfiguration;
+import org.springframework.context.annotation.Import;
 import com.esep.analytics.interfaces.AnalyticsService;
 import com.esep.analytics.model.AnalyticsSummary;
 import com.esep.analytics.model.CategoryOperationCount;
@@ -25,6 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AnalyticsController.class)
+@Import(LocalSecurityConfiguration.class)
 class AnalyticsControllerTest {
 
     @Autowired
