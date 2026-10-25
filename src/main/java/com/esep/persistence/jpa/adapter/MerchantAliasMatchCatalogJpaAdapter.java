@@ -35,6 +35,9 @@ public class MerchantAliasMatchCatalogJpaAdapter implements MerchantAliasMatchCa
                         merchantReferenceJpaMapper.toMerchantId(command.merchantReference())
                 )
                 .orElseThrow(() -> new IllegalArgumentException("Merchant was not found for the reference"));
+        if (!merchant.getMerchantType().allowedInSharedKnowledgeBase()) {
+            throw new IllegalArgumentException("Private persons are not stored in the shared merchant knowledge base");
+        }
 
         merchantAliasJpaRepository.save(MerchantAlias.builder()
                 .aliasName(command.aliasName())
