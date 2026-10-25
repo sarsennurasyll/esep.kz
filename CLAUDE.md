@@ -34,6 +34,13 @@ JAVA_HOME=$(/usr/libexec/java_home -v 21) mvn -q -B test
 
 Системная `java` может быть 17 — проект требует JDK 21. Тесты используют H2 и не должны подключаться к рабочей PostgreSQL. В отчёте указывать число тестов, failures, errors, skipped.
 
+## Локальный режим (ADR-0002)
+
+- Сервис слушает `127.0.0.1` и принимает только `Host` из `ESEP_ALLOWED_HOSTS` (по умолчанию `localhost,127.0.0.1`). Чтобы открыть сервис с другого устройства, нужно изменить `SERVER_ADDRESS` и `ESEP_ALLOWED_HOSTS` — это осознанное решение владельца.
+- Формы защищены CSRF-токеном; `/api/**` принимает изменяющие запросы без `Origin` или с собственным `Origin`.
+- В `@WebMvcTest` подключать `@Import(LocalSecurityConfiguration.class)`, POST-формам — `.with(csrf())`.
+- Аутентификации нет: внешних пользователей пускать нельзя до реализации варианта C из ADR-0002.
+
 ## GitHub workflow
 
 - Репозиторий: `https://github.com/sarsennurasyll/esep.kz`, аккаунт владельца `sarsennurasyll`.
