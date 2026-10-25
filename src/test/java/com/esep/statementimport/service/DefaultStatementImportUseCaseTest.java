@@ -18,6 +18,7 @@ import com.esep.statementimport.model.StatementImportResult;
 import com.esep.entity.BankOperationType;
 import com.esep.persistence.model.ExistingOperationKey;
 import com.esep.moneyflow.model.ClassificationSource;
+import com.esep.moneyflow.model.PurposeDecision;
 import com.esep.moneyflow.service.MoneyFlowClassifierRegistry;
 import com.esep.statementimport.kaspi.KaspiMoneyFlowClassifier;
 import org.junit.jupiter.api.Test;
@@ -168,6 +169,7 @@ class DefaultStatementImportUseCaseTest {
                 new TransactionFingerprintGenerator(),
                 new StatementPeriodResolver(),
                 new MoneyFlowClassifierRegistry(List.of(new KaspiMoneyFlowClassifier())),
+                (description, amount, flowType) -> PurposeDecision.unknown(),
                 statementCatalog,
                 transactionCatalog
         );

@@ -27,6 +27,8 @@ public class TransactionJpaMapper {
                 .flowType(command.moneyFlow().flowType())
                 .flowSource(command.moneyFlow().source())
                 .flowConfidence(command.moneyFlow().confidence())
+                .purpose(command.purposeDecision().purpose())
+                .purposeSource(command.purposeDecision().source())
                 .merchant(merchant)
                 .sourceTransactionFingerprint(command.sourceTransactionFingerprint())
                 .statement(statement)

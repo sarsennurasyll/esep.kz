@@ -5,12 +5,22 @@ package com.esep.moneyflow.model;
  * а не ошибка распознавания.
  */
 public enum MoneyPurpose {
-    INCOME_WORK,
-    INCOME_REGULAR,
-    EXPENSE,
-    FAMILY,
-    DEBT,
-    OWN_FUNDS,
-    GIFT,
-    UNKNOWN
+    INCOME_WORK("Доход за работу, товары или услуги"),
+    INCOME_REGULAR("Зарплата, пенсия, пособие"),
+    EXPENSE("Расход"),
+    FAMILY("Семья и близкие"),
+    DEBT("Долг: выдан или возвращён"),
+    OWN_FUNDS("Мои собственные деньги"),
+    GIFT("Подарок"),
+    UNKNOWN("Не знаю");
+
+    private final String displayName;
+
+    MoneyPurpose(String displayName) {
+        this.displayName = displayName;
+    }
+
+    public String displayName() {
+        return displayName;
+    }
 }

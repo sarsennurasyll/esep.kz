@@ -7,6 +7,7 @@ import com.esep.merchantresolver.interfaces.MerchantCatalog;
 import com.esep.merchantresolver.interfaces.MerchantResolver;
 import com.esep.merchantresolver.service.InMemoryMerchantResolver;
 import com.esep.moneyflow.interfaces.MoneyFlowClassifier;
+import com.esep.moneyflow.interfaces.MoneyPurposeResolver;
 import com.esep.moneyflow.service.MoneyFlowClassifierRegistry;
 import com.esep.normalization.interfaces.MerchantNormalizer;
 import com.esep.normalization.service.DefaultMerchantNormalizer;
@@ -110,6 +111,7 @@ public class StatementImportConfiguration {
             TransactionFingerprintGenerator transactionFingerprintGenerator,
             StatementPeriodResolver statementPeriodResolver,
             MoneyFlowClassifierRegistry moneyFlowClassifierRegistry,
+            MoneyPurposeResolver moneyPurposeResolver,
             StatementCatalog statementCatalog,
             TransactionCatalog transactionCatalog
     ) {
@@ -120,6 +122,7 @@ public class StatementImportConfiguration {
                 transactionFingerprintGenerator,
                 statementPeriodResolver,
                 moneyFlowClassifierRegistry,
+                moneyPurposeResolver,
                 statementCatalog,
                 transactionCatalog
         );

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Назначение операций')}"></head>
+<body><nav th:replace="~{fragments/layout :: navigation}"></nav>
+<main class="container pb-5">
+    <div class="mb-4">
+        <h1 class="h3 mb-1">Назначение переводов и поступлений</h1>
+        <p class="text-secondary mb-0">Выписка не говорит, зачем были переводы. Укажите назначение для контрагента один раз — оно применится ко всем его операциям в этом направлении. Отдельные операции, которые вы разметили вручную, правило не меняет. Удалите правило, чтобы вернуть «не знаю».</p>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+    <div class="card statement-card mb-4"><div class="card-body">
+        <span class="text-secondary small">Размечено по сумме</span>
+        <div class="h3 mb-1" th:text="${#numbers.formatPercent(progress.labeledShare, 1, 1)}">0%</div>
+        <div class="small text-secondary">
+            <span th:text="${progress.rules}">0</span> правил для <span th:text="${progress.counterparties}">0</span> контрагентов ·
+            размечено <span th:text="${progress.labeledAmount}">0</span> из <span th:text="${progress.totalAmount}">0</span> ₸
+        </div>
+    </div></div>
+
+    <div th:if="${#lists.isEmpty(counterparties)}" class="alert alert-light border">Пока нет переводов и поступлений, назначение которых нужно указать.</div>
+    <div th:unless="${#lists.isEmpty(counterparties)}" class="card statement-card"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Контрагент</th><th>Направление</th><th class="text-end">Операций</th><th class="text-end">Сумма, ₸</th><th>Назначение</th></tr></thead>
+        <tbody>
+        <tr th:each="item : ${counterparties}">
+            <td th:text="${item.exampleDescription}"></td>
+            <td th:text="${item.direction.displayName}"></td>
+            <td class="text-end" th:text="${item.operationCount}"></td>
+            <td class="text-end" th:text="${item.amount}"></td>
+            <td>
+                <form class="d-flex gap-2" th:action="@{/purposes/rules}" method="post">
+                    <input type="hidden" name="counterpartyKey" th:value="${item.counterpartyKey}">
+                    <input type="hidden" name="direction" th:value="${item.direction}">
+                    <select class="form-select form-select-sm" name="purpose">
+                        <option th:each="purpose : ${purposeOptions.get(item.direction)}" th:value="${purpose}"
+                                th:text="${purpose.displayName}" th:selected="${item.rule != null and item.rule.purpose == purpose}"></option>
+                    </select>
+                    <button class="btn btn-sm btn-primary" type="submit">Сохранить</button>
+                </form>
+                <form th:if="${item.rule != null}" class="mt-1" th:action="@{/purposes/rules/{id}/delete(id=${item.rule.id})}" method="post">
+                    <button class="btn btn-sm btn-link p-0" type="submit">Не знаю — удалить правило</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table></div></div>
+</main></body></html>

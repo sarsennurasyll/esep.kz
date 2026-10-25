@@ -2,6 +2,8 @@ package com.esep.statementimport.service;
 
 import com.esep.entity.BankType;
 import com.esep.entity.TransactionType;
+import com.esep.moneyflow.interfaces.MoneyPurposeResolver;
+import com.esep.moneyflow.model.MoneyFlowClassification;
 import com.esep.moneyflow.service.MoneyFlowClassifierRegistry;
 import com.esep.persistence.interfaces.StatementCatalog;
 import com.esep.persistence.interfaces.TransactionCatalog;
@@ -32,6 +34,7 @@ public class DefaultStatementImportUseCase {
     private final TransactionFingerprintGenerator transactionFingerprintGenerator;
     private final StatementPeriodResolver statementPeriodResolver;
     private final MoneyFlowClassifierRegistry moneyFlowClassifierRegistry;
+    private final MoneyPurposeResolver moneyPurposeResolver;
     private final StatementCatalog statementCatalog;
     private final TransactionCatalog transactionCatalog;
     private final OverlappingOperationFilter overlappingOperationFilter = new OverlappingOperationFilter();
@@ -43,6 +46,7 @@ public class DefaultStatementImportUseCase {
             TransactionFingerprintGenerator transactionFingerprintGenerator,
             StatementPeriodResolver statementPeriodResolver,
             MoneyFlowClassifierRegistry moneyFlowClassifierRegistry,
+            MoneyPurposeResolver moneyPurposeResolver,
             StatementCatalog statementCatalog,
             TransactionCatalog transactionCatalog
     ) {
@@ -52,6 +56,7 @@ public class DefaultStatementImportUseCase {
         this.transactionFingerprintGenerator = transactionFingerprintGenerator;
         this.statementPeriodResolver = statementPeriodResolver;
         this.moneyFlowClassifierRegistry = moneyFlowClassifierRegistry;
+        this.moneyPurposeResolver = moneyPurposeResolver;
         this.statementCatalog = statementCatalog;
         this.transactionCatalog = transactionCatalog;
     }
@@ -151,6 +156,12 @@ public class DefaultStatementImportUseCase {
     ) {
         var transaction = processedTransaction.transaction();
         var recognition = processedTransaction.merchantRecognition();
+        MoneyFlowClassification moneyFlow = moneyFlowClassifierRegistry.classify(
+                bankType,
+                transaction.bankOperationType(),
+                transaction.amount(),
+                transaction.description()
+        );
 
         return new TransactionPersistenceCommand(
                 transaction.date(),
@@ -159,12 +170,8 @@ public class DefaultStatementImportUseCase {
                 transaction.currency(),
                 financialTransactionType(transaction),
                 transaction.bankOperationType(),
-                moneyFlowClassifierRegistry.classify(
-                        bankType,
-                        transaction.bankOperationType(),
-                        transaction.amount(),
-                        transaction.description()
-                ),
+                moneyFlow,
+                moneyPurposeResolver.decide(transaction.description(), transaction.amount(), moneyFlow.flowType()),
                 recognition.merchantMatch().merchantReference(),
                 transactionFingerprintGenerator.generate(
                         sourceFileHash,
