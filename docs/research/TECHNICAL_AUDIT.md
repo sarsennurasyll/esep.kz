@@ -1,0 +1,163 @@
+# Технический аудит Esep.kz
+
+Состояние на коммит `5fd4663` (ветка `main`, рабочее дерево чистое). Объём: около 6 000 строк в `src/main/java`, 2 550 строк тестов, 44 коммита за 26–29.07.2026. Стек: Java 21, Spring Boot 3.4.5, Spring Data JPA, Flyway, PostgreSQL 16, PDFBox 3.0.5, Thymeleaf.
+
+Классификация находок: **дефект** (подтверждён кодом или запуском), **риск** (возможная проблема), **вопрос** (недостаточно доказательств).
+
+## Статус возможностей
+
+| Возможность | Статус | Доказательство |
+|---|---|---|
+| Извлечение текста PDF | реализовано и проверено на реальном файле | `PdfBoxTextExtractor`; 25 страниц, 1126 строк |
+| Разбор Kaspi Gold (RU) | реализовано, **на реальной выписке не работает** | падает на «Снятие» и «Разное», см. [TRANSACTION_ANALYSIS.md](TRANSACTION_ANALYSIS.md#b-результат-фактической-программы) |
+| Kaspi на казахском и английском | отсутствует | типы операций зашиты русскими словами в `KaspiTransactionParser.LINE` |
+| Шапка выписки (период, маска счёта, итоги) | отсутствует | `KaspiStatementParser.parse` передаёт `null` в `ParsedStatement` ([KaspiStatementParser.java:44](../../src/main/java/com/esep/statementimport/kaspi/KaspiStatementParser.java:44)) |
+| Сверка с итогами шапки | отсутствует | — |
+| Валюта операции | частично: всегда KZT для Kaspi, исходная валюта теряется | `KaspiTransactionParser.parse` |
+| Защита от повторной загрузки того же файла | реализовано и проверено тестами | SHA-256 файла, `uk_statements_source_file_hash` |
+| Защита от пересекающихся выписок | отсутствует | fingerprint включает хеш файла |
+| Нормализация названий | реализовано и проверено тестами; на реальных данных эффекта нет | 136 → 136 ключей |
+| Точное распознавание по каталогу и алиасам | реализовано и проверено | `InMemoryMerchantResolver` (несмотря на имя, работает через JPA-адаптеры) |
+| Fuzzy matching | отсутствует; есть подсказка по общему токену ≥4 символов | `DefaultMerchantManagementService.sharesMeaningfulToken` |
+| Rule Engine | только задокументировано | `PROJECT_VISION.md` |
+| AI | только задокументировано | `DetectionSource.AI` без использования |
+| Подтверждение пользователем | частично: привязка неизвестного описания к продавцу | `POST /api/merchants/match` |
+| История решений, отмена, аудит | отсутствует | алиас удаляется, привязанные операции остаются |
+| Счётчики `times_matched`, `confirmed_count`, `rejected_count` | только в схеме | в коде не обновляются |
+| Типы операций банка | частично: PURCHASE, TRANSFER, TOP_UP, UNKNOWN | `BankOperationType` |
+| Модель «направление / тип / назначение» | отсутствует | `TransactionType` выводится из знака суммы |
+| Аналитика (сводка, категории, продавцы, люди, месяцы) | реализовано, проверено тестами на H2; методологически неверно для доходов и расходов | см. ниже |
+| Web-интерфейс | реализовано, проверено `@WebMvcTest` | Thymeleaf-шаблоны |
+| Аутентификация и авторизация | отсутствует | `SecurityAutoConfiguration` исключён ([application.yml:7](../../src/main/resources/application.yml:7)) |
+| Мультипользовательность | отсутствует | ни в одной таблице нет владельца |
+| OpenAPI | реализовано | springdoc, `/swagger-ui.html` |
+
+## Поток данных
+
+```text
+POST /import (Thymeleaf)                       POST /api/statements/import
+  └─ RestStatementWebApiClient ── HTTP на localhost:${server.port} ──┘
+                                                 │
+                         DefaultStatementImportUseCase (@Transactional)
+                         ├─ SHA-256 файла → StatementCatalog.existsBySourceFileHash
+                         ├─ StatementParserRegistry.getParser(bankType)
+                         │    └─ KaspiStatementParser
+                         │         ├─ PdfBoxTextExtractor (весь файл в памяти)
+                         │         ├─ KaspiTransactionExtractor (строки после маркера «ОПЕРАЦ»)
+                         │         └─ KaspiTransactionParser (regex → ParsedTransaction)
+                         ├─ StatementPeriodResolver (min/max дат)
+                         ├─ TransactionImportProcessor
+                         │    ├─ PURCHASE → DefaultMerchantRecognitionService
+                         │    │      └─ DefaultMerchantNormalizer → InMemoryMerchantResolver
+                         │    │            → MerchantCatalogJpaAdapter / MerchantAliasCatalogJpaAdapter
+                         │    ├─ TRANSFER и сумма < 0 → системный продавец «ПЕРЕВОДЫ ЛЮДЯМ», confidence 1.0
+                         │    └─ остальное → notMatched
+                         ├─ StatementCatalog.save, TransactionCatalog.saveAll
+                         └─ DefaultStatementImporter.createImportResult (счётчики)
+
+Аналитика: AnalyticsQueryJpaAdapter → JPQL-агрегаты по всей таблице transactions
+Категория операции = merchant.category на момент запроса
+```
+
+## Архитектура
+
+### Что разумно сохранить
+
+- Порт `StatementParser` (`supportedBank`, `parse(InputStream)`) и `DefaultStatementParserRegistry` на `EnumMap` — новый банк добавляется новой реализацией.
+- `ParsedStatement` / `ParsedTransaction` как неизменяемые записи без JPA.
+- Разделение каталогов-портов (`StatementCatalog`, `TransactionCatalog`, `MerchantCatalog`) и JPA-адаптеров; read-модели отдельно от записи.
+- `BigDecimal` и `NUMERIC(19,2)` для денег; `LocalDate` без фиктивного времени (решение ADR-0001 соответствует данным: в PDF нет времени).
+- SHA-256 файла с уникальным ограничением и позиционный fingerprint для законных одинаковых строк — подтверждено данными (39 одинаковых строк в выписке).
+- Flyway и `ddl-auto: validate`.
+- Порядок «база → алиас → правило → AI → пользователь» из `AGENTS.md` как принцип.
+
+### Что мешает расширению
+
+| № | Находка | Тип | Место | Влияние |
+|---|---|---|---|---|
+| A1 | Типы операций Kaspi зашиты тремя русскими словами в regex; неизвестный тип роняет весь импорт вместо пометки `UNKNOWN` | дефект | [KaspiTransactionParser.java:14-23](../../src/main/java/com/esep/statementimport/kaspi/KaspiTransactionParser.java:14) | реальная выписка не импортируется |
+| A2 | `BankOperationType` и `TransactionType` смешивают тип банка и экономический смысл; `TransactionType` определяется знаком суммы | дефект модели | [DefaultStatementImportUseCase.java:135](../../src/main/java/com/esep/statementimport/service/DefaultStatementImportUseCase.java:135) | доходы и расходы завышаются |
+| A3 | Переводы людям моделируются как «продавец» `ПЕРЕВОДЫ ЛЮДЯМ`, найденный по строковой константе | дефект модели | [TransactionImportProcessor.java:30](../../src/main/java/com/esep/statementimport/service/TransactionImportProcessor.java:30), `V9`, `V10` | ложная уверенность; противоречит разделению контрагента и назначения |
+| A4 | Категория хранится только у продавца; смена категории переписывает всю историю | риск | `AnalyticsTransactionReadJpaRepository` | нельзя различить «эта операция у этого продавца — подарок» |
+| A5 | Fingerprint зависит от хеша файла; нет дедупликации между выписками | дефект | [TransactionFingerprintGenerator.java:20](../../src/main/java/com/esep/statementimport/service/TransactionFingerprintGenerator.java:20) | двойной учёт при пересечении периодов |
+| A6 | Два параллельных контракта парсера: живой `statementimport.interfaces.StatementParser` и заглушка `parser.interfaces.StatementParser` с `@Component KaspiPdfParser`, возвращающим `false` | дефект (мёртвый код) | `src/main/java/com/esep/parser/` | путаница при добавлении банка |
+| A7 | Web-контроллеры ходят в собственный REST API по HTTP на `localhost` | риск | `Rest*WebApiClient` | лишняя сериализация файла, поломка за прокси и после включения аутентификации |
+| A8 | `KnowledgeBaseMerchantService` использует JPA-репозитории напрямую, минуя порты | риск | `merchantmanagement/service/KnowledgeBaseMerchantService.java` | непоследовательные границы |
+| A9 | `DefaultStatementImporter` и `TransactionImportProcessor` дублируют обработку; use case держит оба | упрощение | `statementimport/service` | двусмысленный контракт |
+| A10 | `suggestion()` вызывает `merchantReadQuery.findAll()` для каждого неизвестного описания | риск производительности | [DefaultMerchantManagementService.java:157](../../src/main/java/com/esep/merchantmanagement/service/DefaultMerchantManagementService.java:157) | O(описаний × продавцов) с загрузкой алиасов |
+| A11 | Data-миграции (`V4`, `V6`, `V9`) переписывают пользовательские операции и удаляют продавцов | риск | `db/migration` | необратимые изменения данных при деплое |
+| A12 | Пустые пакеты `controller`, `dto`, `service`, `repository`, `security` и др. | косметика | `src/main/java/com/esep/*/.gitkeep` | README описывает несуществующую структуру |
+
+### Почему добавить банк сейчас сложнее, чем обещает README
+
+Контракт парсера расширяем, но остальная система ждёт данных в форме Kaspi: три типа операций, описание как единственный носитель контрагента, отсутствие отдельного поля получателя, отсутствие шапки. У других банков бывают отдельные колонки «получатель», «назначение платежа», MCC, БИН/ИИН, время. Без модели `Counterparty` и `PaymentPurpose` эти данные некуда положить, а Merchant Recognition принимает только строку описания.
+
+## README и фактический код
+
+| В README | Фактически |
+|---|---|
+| «создан только инфраструктурный каркас: бизнес-логика, API и модель данных ещё не реализованы» | реализованы импорт, API, UI, аналитика, база знаний |
+| Spring Security в стеке | автоконфигурация исключена, защиты нет |
+| структура `controller/`, `service/`, `repository/` | пакеты пустые, код организован по фичам |
+| Swagger «после появления API» | доступен |
+| PostgreSQL на `localhost:5432` | `application.yml` и `docker-compose.yml` используют 15432 |
+| v1 «Загрузка PDF-выписок Kaspi» | на реальной выписке автора не работает |
+| v3 «AI-анализ расходов» | не начат; в `PROJECT_VISION.md` AI корректно указан как fallback |
+
+## Security и приватность
+
+| № | Находка | Тип | Приоритет | Место | Как проверить |
+|---|---|---|---|---|---|
+| S1 | Нет аутентификации и авторизации; все API, включая удаление продавцов и алиасов, открыты | дефект | P0 до любого внешнего пользователя | [application.yml:5-8](../../src/main/resources/application.yml:5) | запрос без учётных данных к `/api/statements` |
+| S2 | Нет изоляции данных пользователей: аналитика агрегирует всю таблицу, `/api/statements/{id}` отдаёт любую выписку по последовательному ID (IDOR станет реальным сразу после появления второго пользователя) | дефект | P0 | `StatementQueryController`, `AnalyticsTransactionReadJpaRepository` | перебор ID |
+| S3 | Сырая строка операции (дата, сумма, имя контрагента) попадает в текст исключения и HTTP-ответ, затем во flash-сообщение UI | дефект, подтверждён прогоном | P0 | [KaspiTransactionParser.java:23](../../src/main/java/com/esep/statementimport/kaspi/KaspiTransactionParser.java:23), [StatementImportExceptionHandler.java:47](../../src/main/java/com/esep/statementimport/api/StatementImportExceptionHandler.java:47) | загрузка выписки с операцией «Снятие» |
+| S4 | Ответ 500 содержит `exception.getMessage()` любого непредвиденного исключения | дефект | P1 | `StatementImportExceptionHandler.handleUnexpected` | спровоцировать ошибку БД |
+| S5 | Миграция `V5` записывает в общую базу знаний четыре записи вида «фамилия/имя + инициал» частных лиц; после `V9` они остаются алиасами. Миграции лежат в Git | дефект приватности | P0 | `V5__classify_merchants_and_add_people.sql` | чтение файла; проверить, публичен ли репозиторий |
+| S6 | Подтверждение пользователя создаёт глобальный `verified=true` алиас; неизвестные описания включают входящие переводы и «ИП Фамилия», то есть имена частных лиц попадают в общую базу продавцов | дефект архитектуры | P0 | `DefaultMerchantManagementService.match`, `MerchantAliasMatchCatalogJpaAdapter` | привязать описание пополнения к продавцу |
+| S7 | Нет CSRF-защиты; формы удаления и изменения базы знаний принимают POST с любого сайта. Сервис слушает все интерфейсы | риск | P1 | `KnowledgeBaseWebController` | HTML-форма на стороннем origin |
+| S8 | Лимиты загрузки не настроены явно (действуют умолчания Spring: 1 МБ на файл); нет проверки сигнатуры PDF, числа страниц и времени разбора; PDFBox загружает документ целиком в память | риск | P1 | `StatementImportController`, `PdfBoxTextExtractor` | загрузить PDF с большим числом страниц или вложенными потоками |
+| S9 | Исходные описания операций хранятся в открытом виде (`description VARCHAR(1000)`), имя исходного файла сохраняется как есть; шифрования, срока хранения и удаления выписки нет | риск соответствия закону | P1 | `V1__create_initial_schema.sql` | — |
+| S10 | Учётные данные БД по умолчанию `esep/esep` в `application.yml` и `docker-compose.yml` | риск | P2 | конфигурация | — |
+| S11 | Гонка при одновременной загрузке одного файла: проверка `existsBySourceFileHash` и вставка не атомарны; уникальный индекс спасёт данные, но клиент получит 500 вместо 409 | риск | P2 | `DefaultStatementImportUseCase.importStatement` | два параллельных запроса |
+| S12 | Нет `@Version` у `Merchant`; одновременное редактирование базы знаний — last write wins | риск | P3 | `entity/Merchant.java` | — |
+| S13 | Логирование: в `handleUnexpected` пишется полный stack trace; сообщения исключений парсера могут содержать строки операций | риск | P1 | `StatementImportExceptionHandler` | — |
+| S14 | Тестовые фикстуры содержат строки вида «Имя Ф.» | вопрос | P3 | `KaspiTransactionParserTest` | уточнить у автора, синтетические ли это имена |
+
+Положительное: SQL-инъекций не обнаружено (JPQL с параметрами, Spring Data); Thymeleaf экранирует вывод, `th:utext` не используется; `open-in-view: false`; деньги в `BigDecimal`.
+
+## Тесты
+
+Команда: `JAVA_HOME=<JDK 21> mvn -q -B test` (системная `java` в окружении — 17; Maven 3.9.9; Docker 29.2.1 установлен, контейнер `esep-postgres` не запущен и не понадобился).
+
+| Метрика | Значение |
+|---|---|
+| Тестовых классов | 32 |
+| Тестов | 115 |
+| Failures | 0 |
+| Errors | 0 |
+| Skipped | 4 |
+| Результат | exit code 0, эквивалент `BUILD SUCCESS` |
+
+- Пропущены 4 теста с реальным PDF (`@EnabledIfSystemProperty(named = "kaspi.pdf.path")`) в `PdfBoxTextExtractorTest`, `KaspiTransactionExtractorTest`, `KaspiImportPipelineIntegrationTest`, `StatementImportUseCaseIntegrationTest`. Запускать их с реальной выпиской в этой сессии не стал: интеграционные тесты пишут в H2, а прямой прогон парсера уже дал ответ.
+- Интеграционные JPA-тесты работают на H2 с `spring.flyway.enabled=false` и `ddl-auto=create-drop`: **миграции Flyway не проверяются ни одним тестом**, совместимость SQL-миграций с PostgreSQL не подтверждена.
+- Нет тестов на типы «Снятие», «Разное», валютные строки, казахский и английский язык выписки, сверку итогов, пересекающиеся выписки, разделение пользователей.
+- Тесты, которые нужны до изменения поведения, перечислены в [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md#синтетический-набор-тестов).
+
+## Merchant Intelligence: оценка подходов
+
+| Подход | Точность | Автоматизация | Стоимость | Задержка | Объяснимость | Приватность | Риск ложной уверенности | Вывод для Esep |
+|---|---|---|---|---|---|---|---|---|
+| Детерминированные правила | высокая на узком наборе | низкая–средняя | низкая | мгновенно | полная | локально | низкий, если правило узкое | основа для типов операций и собственных переводов |
+| База продавцов и подтверждённые алиасы | высокая для известных | растёт с данными | низкая | мгновенно | полная | безопасно только для юрлиц | средний при общей базе без области действия | сохранить, но только для бизнесов |
+| Fuzzy / вероятностное сопоставление | средняя | выше | низкая | мгновенно | средняя | локально | высокий для «ИП Фамилия» и коротких имён | только как подсказка с подтверждением |
+| Классический ML (на разметке) | нужна разметка тысяч операций | средняя–высокая | средняя | мгновенно | низкая–средняя | локально | средний | не раньше, чем появится эталонная разметка |
+| LLM | неизвестна на данных KZ; склонна «угадывать» назначение | высокая видимость покрытия | за запрос | секунды | низкая | передача данных провайдеру, вероятно трансграничная | высокий | не использовать для переводов; для продавцов — только после правил и только на названиях юрлиц |
+| Гибридный каскад | лучшая при правильном порядке | высокая | низкая–средняя | мгновенно для большинства | по шагам | контролируемая | низкий, если есть явный отказ | целевая архитектура |
+
+Рекомендуемая модель решения на операцию, три независимые оценки:
+
+1. **Тип движения** (покупка, перевод, внесение и снятие наличных, свой перевод, возврат, комиссия) — из банковского типа и правил, уверенность почти всегда высокая.
+2. **Идентификация контрагента** — продавец-юрлицо из общей базы; физлицо или ИП только в личном пространстве пользователя, в хешированном виде.
+3. **Назначение и категория** — по умолчанию «не определено» для переводов и наличных; категория продавца — лишь подсказка; решение пользователя хранится на уровне операции или личного правила с областью действия (контрагент, диапазон сумм, период) и отменяется одним действием.
+
+Риск объединения разных продавцов: на этой выписке нормализация ничего не объединила, но правило `RemoveLegalPrefixRule` превращает «ИП Фамилия И.» в «ФАМИЛИЯ И», а уникальный индекс `normalized_name` в общей таблице сольёт всех однофамильцев с одинаковым инициалом в одного продавца. Правило `RemoveLocationSuffixRule` склеит «X ALMATY» и «X ASTANA» — для сети это верно, для двух разных бизнесов с одним словом в названии нет. Успешная нормализация подтверждает только совпадение строк, не идентичность продавца.
