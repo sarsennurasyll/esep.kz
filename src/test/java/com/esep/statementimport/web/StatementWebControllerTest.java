@@ -119,7 +119,7 @@ class StatementWebControllerTest {
                 .thenThrow(new StatementApiException(404, "Not found", null));
 
         mockMvc.perform(get("/statements/99"))
-                .andExpect(status().isOk())
+                .andExpect(status().isNotFound())
                 .andExpect(view().name("error/404"))
                 .andExpect(model().attribute("message", "Запрошенная выписка не найдена."));
     }

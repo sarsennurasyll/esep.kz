@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @WebMvcTest(KnowledgeBaseWebController.class)
 @Import(LocalSecurityConfiguration.class)
@@ -36,5 +37,14 @@ class KnowledgeBaseWebControllerTest {
 
         String addForm = page.substring(page.indexOf("Добавить продавца"), page.indexOf("</form>", page.indexOf("Добавить продавца")));
         assertThat(addForm).contains("value=\"STORE\"").doesNotContain("value=\"PERSON\"");
+    }
+
+    @Test
+    void shouldRenderNotFoundPageForUnknownMerchant() throws Exception {
+        when(knowledgeBaseWebApiClient.findMerchant("99999")).thenThrow(new MerchantApiException(404, "Not found", null));
+
+        mockMvc.perform(get("/knowledge-base/merchants/99999"))
+                .andExpect(status().isNotFound())
+                .andExpect(view().name("error/404"));
     }
 }
