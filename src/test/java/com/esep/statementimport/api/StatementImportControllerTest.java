@@ -2,6 +2,7 @@ package com.esep.statementimport.api;
 
 import com.esep.entity.BankType;
 import com.esep.statementimport.exception.StatementAlreadyImportedException;
+import com.esep.statementimport.exception.StatementFormatException;
 import com.esep.statementimport.exception.StatementWithoutTransactionsException;
 import com.esep.statementimport.exception.UnsupportedBankTypeException;
 import com.esep.statementimport.model.StatementImportResult;
@@ -101,6 +102,29 @@ class StatementImportControllerTest {
                         .file(pdfFile("statement.pdf", "content"))
                         .param("bankType", "HALYK"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldReturnBadRequestForStatementWithUnexpectedFormat() throws Exception {
+        when(statementImportUseCase.importStatement(any(InputStream.class), eq(BankType.KASPI), eq("statement.pdf")))
+                .thenThrow(new StatementFormatException("Сумма операций типа PURCHASE не совпадает с итогом в шапке выписки"));
+
+        mockMvc.perform(multipart("/api/statements/import")
+                        .file(pdfFile("statement.pdf", "content"))
+                        .param("bankType", "KASPI"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldNotExposeUnexpectedErrorDetails() throws Exception {
+        when(statementImportUseCase.importStatement(any(InputStream.class), eq(BankType.KASPI), eq("statement.pdf")))
+                .thenThrow(new IllegalStateException("01.08.26 - 1 000,00 ₸ Перевод Тестов Т."));
+
+        mockMvc.perform(multipart("/api/statements/import")
+                        .file(pdfFile("statement.pdf", "content"))
+                        .param("bankType", "KASPI"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.message").value("Внутренняя ошибка сервера"));
     }
 
     private MockMultipartFile pdfFile(String fileName, String content) {

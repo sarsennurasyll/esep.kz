@@ -3,6 +3,7 @@ package com.esep.statementimport.api;
 import com.esep.common.api.ApiErrorResponse;
 import com.esep.parser.common.ParserException;
 import com.esep.statementimport.exception.StatementAlreadyImportedException;
+import com.esep.statementimport.exception.StatementFormatException;
 import com.esep.statementimport.exception.StatementWithoutTransactionsException;
 import com.esep.statementimport.pdf.PdfExtractionException;
 import org.slf4j.Logger;
@@ -33,15 +34,22 @@ public class StatementImportExceptionHandler {
         return error(HttpStatus.BAD_REQUEST, exception);
     }
 
-    @ExceptionHandler({PdfExtractionException.class, ParserException.class, IllegalArgumentException.class})
+    @ExceptionHandler({
+            StatementFormatException.class,
+            PdfExtractionException.class,
+            ParserException.class,
+            IllegalArgumentException.class
+    })
     ResponseEntity<ApiErrorResponse> handleParserError(RuntimeException exception) {
         return error(HttpStatus.BAD_REQUEST, exception);
     }
 
+    // Текст непредвиденного исключения может содержать данные выписки, поэтому клиент получает общее сообщение.
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiErrorResponse> handleUnexpected(Exception exception) {
-        log.error("Непредвиденная ошибка при обработке запроса к API выписок.", exception);
-        return error(HttpStatus.INTERNAL_SERVER_ERROR, exception);
+        log.error("Непредвиденная ошибка при обработке запроса к API выписок: {}", exception.getClass().getName());
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ApiErrorResponse("Внутренняя ошибка сервера"));
     }
 
     private ResponseEntity<ApiErrorResponse> error(HttpStatus status, Exception exception) {
