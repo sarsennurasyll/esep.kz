@@ -14,6 +14,7 @@ import com.esep.normalization.service.DefaultMerchantNormalizer;
 import com.esep.persistence.interfaces.StatementCatalog;
 import com.esep.persistence.interfaces.TransactionCatalog;
 import com.esep.persistence.model.StatementPersistenceCommand;
+import com.esep.persistence.model.ExistingOperationKey;
 import com.esep.persistence.model.TransactionPersistenceCommand;
 import com.esep.statementimport.interfaces.StatementParser;
 import com.esep.statementimport.interfaces.StatementParserRegistry;
@@ -115,6 +116,12 @@ class StatementImportUseCaseIntegrationTest {
         @Override
         public void saveAll(String statementSourceFileHash, List<TransactionPersistenceCommand> transactions) {
             this.transactions = transactions;
+        }
+
+        @Override
+        public List<ExistingOperationKey> findOperationKeys(BankType bankType, String maskedAccountNumber,
+                                                            java.time.LocalDate periodFrom, java.time.LocalDate periodTo) {
+            return List.of();
         }
     }
 }

@@ -34,6 +34,7 @@ public class DefaultStatementImportUseCase {
     private final MoneyFlowClassifierRegistry moneyFlowClassifierRegistry;
     private final StatementCatalog statementCatalog;
     private final TransactionCatalog transactionCatalog;
+    private final OverlappingOperationFilter overlappingOperationFilter = new OverlappingOperationFilter();
 
     public DefaultStatementImportUseCase(
             StatementParserRegistry statementParserRegistry,
@@ -67,12 +68,19 @@ public class DefaultStatementImportUseCase {
         ParsedStatement parsedStatement = statementParserRegistry.getParser(bankType)
                 .parse(new ByteArrayInputStream(sourceFile));
         StatementPeriod statementPeriod = statementPeriodResolver.resolve(parsedStatement);
-        List<ProcessedTransaction> processedTransactions = parsedStatement.transactions().stream()
+        String maskedAccountNumber = maskAccountNumber(parsedStatement.accountNumber());
+        OverlappingOperationFilter.OverlapResult overlap = excludeAlreadyImportedOperations(
+                parsedStatement,
+                bankType,
+                maskedAccountNumber,
+                statementPeriod
+        );
+        List<ProcessedTransaction> processedTransactions = overlap.newTransactions().stream()
                 .map(transactionImportProcessor::process)
                 .toList();
 
         Long statementId = statementCatalog.save(toStatementCommand(
-                parsedStatement,
+                maskedAccountNumber,
                 statementPeriod,
                 bankType,
                 originalFileName,
@@ -92,13 +100,35 @@ public class DefaultStatementImportUseCase {
                 importResult.recognizedMerchants(),
                 importResult.unknownMerchants(),
                 importResult.withoutMerchantOperations(),
+                overlap.skippedDuplicates(),
                 statementPeriod.periodFrom(),
                 statementPeriod.periodTo()
         );
     }
 
+    // Без идентичности счёта выписки нельзя надёжно связать, поэтому сравнение с прежними выписками не выполняется.
+    private OverlappingOperationFilter.OverlapResult excludeAlreadyImportedOperations(
+            ParsedStatement parsedStatement,
+            BankType bankType,
+            String maskedAccountNumber,
+            StatementPeriod statementPeriod
+    ) {
+        if (maskedAccountNumber == null) {
+            return new OverlappingOperationFilter.OverlapResult(parsedStatement.transactions(), 0);
+        }
+        return overlappingOperationFilter.filter(
+                parsedStatement.transactions(),
+                transactionCatalog.findOperationKeys(
+                        bankType,
+                        maskedAccountNumber,
+                        statementPeriod.periodFrom(),
+                        statementPeriod.periodTo()
+                )
+        );
+    }
+
     private StatementPersistenceCommand toStatementCommand(
-            ParsedStatement statement,
+            String maskedAccountNumber,
             StatementPeriod statementPeriod,
             BankType bankType,
             String originalFileName,
@@ -107,7 +137,7 @@ public class DefaultStatementImportUseCase {
         return new StatementPersistenceCommand(
                 bankType,
                 originalFileName,
-                maskAccountNumber(statement.accountNumber()),
+                maskedAccountNumber,
                 sourceFileHash,
                 statementPeriod.periodFrom(),
                 statementPeriod.periodTo()

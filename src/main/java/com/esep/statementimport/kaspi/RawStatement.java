@@ -9,10 +9,11 @@ import java.util.Map;
 
 /**
  * Внутренний результат поиска необработанных строк операций и сведений шапки Kaspi.
- * Период и итоги отсутствуют, если в тексте нет шапки выписки.
+ * Период, последние цифры карты и итоги отсутствуют, если в тексте нет шапки выписки.
  */
 record RawStatement(
         List<String> transactionLines,
+        String cardNumberSuffix,
         LocalDate periodFrom,
         LocalDate periodTo,
         Map<BankOperationType, BigDecimal> summaryTotals

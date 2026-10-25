@@ -11,6 +11,7 @@ public record StatementImportResult(
         int recognizedOperations,
         int unknownOperations,
         int withoutMerchantOperations,
+        int skippedDuplicateOperations,
         LocalDate periodFrom,
         LocalDate periodTo
 ) {

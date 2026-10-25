@@ -49,6 +49,7 @@ class StatementImportControllerTest {
                         3,
                         1,
                         2,
+                        0,
                         LocalDate.of(2026, 7, 1),
                         LocalDate.of(2026, 7, 31)
                 ));
@@ -147,7 +148,7 @@ class StatementImportControllerTest {
     @Test
     void shouldAcceptImportFromOwnOrigin() throws Exception {
         when(statementImportUseCase.importStatement(any(InputStream.class), eq(BankType.KASPI), eq("statement.pdf")))
-                .thenReturn(new StatementImportResult(42L, 1, 1, 0, 0, LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31)));
+                .thenReturn(new StatementImportResult(42L, 1, 1, 0, 0, 0, LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31)));
 
         mockMvc.perform(multipart("/api/statements/import")
                         .file(pdfFile("statement.pdf", "content"))

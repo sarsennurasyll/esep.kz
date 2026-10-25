@@ -27,6 +27,8 @@ class KaspiTransactionExtractor {
             "^(?<type>" + KaspiOperationTypes.summaryNamesPattern() + ") (?<sign>[+-]) ?"
                     + "(?<amount>(?:\\d{1,3}(?: \\d{3})*|\\d+),\\d{2}) ₸(?:\\s.*)?$"
     );
+    // Из шапки берутся только последние четыре цифры маски карты; имя владельца и номер счёта не читаются.
+    private static final Pattern CARD_NUMBER_SUFFIX = Pattern.compile("Номер карты: \\*(?<suffix>\\d{4})\\b");
     private static final DateTimeFormatter SHORT_DATE = DateTimeFormatter.ofPattern("dd.MM.uu");
 
     RawStatement extract(String statementText) {
@@ -34,6 +36,7 @@ class KaspiTransactionExtractor {
         Map<BankOperationType, BigDecimal> summaryTotals = new EnumMap<>(BankOperationType.class);
         LocalDate periodFrom = null;
         LocalDate periodTo = null;
+        String cardNumberSuffix = null;
         boolean operationsSectionStarted = false;
 
         for (String line : statementText.lines().toList()) {
@@ -44,6 +47,13 @@ class KaspiTransactionExtractor {
                 if (period.find()) {
                     periodFrom = LocalDate.parse(period.group("from"), SHORT_DATE);
                     periodTo = LocalDate.parse(period.group("to"), SHORT_DATE);
+                }
+            }
+
+            if (cardNumberSuffix == null && transactionLines.isEmpty()) {
+                Matcher card = CARD_NUMBER_SUFFIX.matcher(normalizedLine);
+                if (card.find()) {
+                    cardNumberSuffix = card.group("suffix");
                 }
             }
 
@@ -62,7 +72,7 @@ class KaspiTransactionExtractor {
             }
         }
 
-        return new RawStatement(transactionLines, periodFrom, periodTo, summaryTotals);
+        return new RawStatement(transactionLines, cardNumberSuffix, periodFrom, periodTo, summaryTotals);
     }
 
     private void readSummaryTotal(String line, Map<BankOperationType, BigDecimal> summaryTotals) {

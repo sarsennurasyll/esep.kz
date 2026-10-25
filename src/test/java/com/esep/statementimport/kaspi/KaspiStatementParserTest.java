@@ -103,6 +103,13 @@ class KaspiStatementParserTest {
     }
 
     @Test
+    void shouldReadOnlyCardNumberSuffixFromHeader() {
+        var statement = parse(GOLD_STATEMENT);
+
+        assertThat(statement.accountNumber()).isEqualTo("0000");
+    }
+
+    @Test
     void shouldRejectStatementWhenOperationsDoNotMatchHeaderTotals() {
         String statementWithMissingOperation = GOLD_STATEMENT.replace(
                 "30.08.26 - 9 000,00 ₸ Снятие Банкомат Тестовый\n", ""

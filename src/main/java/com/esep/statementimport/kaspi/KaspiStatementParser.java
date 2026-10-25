@@ -57,7 +57,7 @@ public class KaspiStatementParser implements StatementParser {
         verifyTransactionsWithinPeriod(rawStatement, transactions);
         verifySummaryTotals(rawStatement.summaryTotals(), transactions);
 
-        return new ParsedStatement(null, rawStatement.periodFrom(), rawStatement.periodTo(), transactions);
+        return new ParsedStatement(rawStatement.cardNumberSuffix(), rawStatement.periodFrom(), rawStatement.periodTo(), transactions);
     }
 
     private void verifyTransactionsWithinPeriod(RawStatement rawStatement, List<ParsedTransaction> transactions) {
