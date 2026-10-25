@@ -118,6 +118,16 @@ git commit -m "fix: исправлен импорт банковской вып�
 git commit -m "docs: добавлен ADR архитектуры persistence"
 ```
 
+### Public Materials and Authorship
+
+This repository is part of the owner's professional portfolio.
+
+- Do not add automatic signatures or promotional lines of AI tools to commits, pull requests, README, documentation, or other public materials. This includes `Generated with ...`, `Co-Authored-By: <AI tool>`, emoji footers, and similar trailers.
+- Keep Git author and committer as the repository-local identity of the owner's account (`sarsennurasyll`). Do not change global Git configuration.
+- Write commit messages, PR descriptions, and documentation as plain engineering text: what changed, why, how it was verified, and what is still limited. Avoid generic AI-style phrasing.
+- Do not claim that the work was done entirely by hand and do not state unverified achievements; describe actual decisions and results.
+- Do not rewrite Git history or force-push to remove old signatures; fix only editable materials and future commits.
+
 ## Task Completion Report
 
 After each completed task, report:
