@@ -89,13 +89,13 @@ Examples of future features include statement import, merchant knowledge, transa
 
 Consider a task complete only after all of the following are done:
 
-1. Run the full test suite with `mvn test`.
-2. Confirm that every test passes.
-3. Check `git status`.
-4. Create a commit.
-5. Run `git push`.
+1. Run the full test suite with `mvn test` on JDK 21.
+2. Confirm that every test passes and record passed, failed, errored, and skipped counts.
+3. Review `git status` and `git diff`; make sure no secrets or personal financial data are included.
+4. Create a commit on the current work branch.
+5. Push the work branch.
 
-If `git push` requires confirmation or cannot be completed, stop and report the blocker.
+Steps 4 and 5 follow the Git Rules below. If tests fail or a data-leak risk remains, do not push. If `git push` requires confirmation or cannot be completed, stop and report the blocker.
 
 ## Commit Format
 
@@ -146,11 +146,14 @@ AI must never be the first decision mechanism. It is a fallback for unresolved c
 
 ## Git Rules
 
-- Do not execute Git commands, create commits, push branches, or alter history unless the user explicitly asks for the action.
-- Before proposing a commit, review the intended file scope and keep commits small, coherent, and reversible.
-- Use the commit-message language and format requested by the user or established by the repository.
+- Work happens on a dedicated work branch, never directly on `main`.
+- Agents may create work branches, stage reviewed files, commit verified changes, and push the work branch to `origin`.
+- Pushing to `main`, merging into `main`, force pushing, deleting branches, and rewriting history require explicit approval from the owner for each case.
+- Commits use the repository-local author configured for the owner's GitHub account. Do not change global Git settings and do not invent author emails.
+- Stage files by explicit path after reviewing each one; do not use `git add -A` or `git add .` without that review.
+- Keep commits small, coherent, and reversible; one logically complete change per commit.
 - Do not stage unrelated user changes.
-- Never use destructive Git commands such as `reset --hard` or force pushes without explicit approval.
+- Never use destructive Git commands such as `reset --hard` without explicit approval.
 
 ## Final Checklist
 
