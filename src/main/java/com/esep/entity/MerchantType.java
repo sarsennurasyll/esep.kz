@@ -26,4 +26,12 @@ public enum MerchantType {
     public String displayName() {
         return displayName;
     }
+
+    /**
+     * Общая база знаний хранит только организации. Тип PERSON остаётся лишь у системного получателя
+     * «Переводы людям»; имена частных лиц в общую базу не записываются.
+     */
+    public boolean allowedInSharedKnowledgeBase() {
+        return this != PERSON;
+    }
 }

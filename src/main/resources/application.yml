@@ -1,4 +1,6 @@
 server:
+  # Локальный режим (ADR-0002): сервис доступен только с этого компьютера.
+  address: ${SERVER_ADDRESS:127.0.0.1}
   port: ${SERVER_PORT:8080}
 
 spring:
@@ -6,7 +8,11 @@ spring:
     name: esep
   autoconfigure:
     exclude:
-      - org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration
+      - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+  servlet:
+    multipart:
+      max-file-size: ${ESEP_MAX_UPLOAD_FILE_SIZE:5MB}
+      max-request-size: ${ESEP_MAX_UPLOAD_REQUEST_SIZE:6MB}
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:15432/esep}
     username: ${DB_USERNAME:esep}
@@ -21,6 +27,13 @@ spring:
         format_sql: true
         jdbc:
           time_zone: UTC
+
+esep:
+  security:
+    # Имена в заголовке Host, по которым разрешено обращаться к сервису.
+    allowed-hosts: ${ESEP_ALLOWED_HOSTS:localhost,127.0.0.1}
+  import:
+    max-pdf-pages: ${ESEP_MAX_PDF_PAGES:200}
 
 springdoc:
   api-docs:

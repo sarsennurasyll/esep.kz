@@ -1,5 +1,7 @@
 package com.esep.statementimport.web;
 
+import com.esep.security.LocalSecurityConfiguration;
+import org.springframework.context.annotation.Import;
 import com.esep.entity.BankType;
 import com.esep.entity.TransactionType;
 import com.esep.statementimport.api.dto.StatementImportResponse;
@@ -19,6 +21,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -29,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @WebMvcTest(StatementWebController.class)
+@Import(LocalSecurityConfiguration.class)
 class StatementWebControllerTest {
 
     @Autowired
@@ -44,15 +49,34 @@ class StatementWebControllerTest {
                 2,
                 2,
                 0,
+                0,
+                0,
                 LocalDate.of(2026, 7, 1),
                 LocalDate.of(2026, 7, 31)
         ));
 
         mockMvc.perform(multipart("/import")
                         .file(new MockMultipartFile("file", "statement.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes()))
-                        .param("bankType", "KASPI"))
+                        .param("bankType", "KASPI")
+                        .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(view().name("redirect:/statements/42"));
+    }
+
+    @Test
+    void shouldRejectImportFormWithoutCsrfToken() throws Exception {
+        mockMvc.perform(multipart("/import")
+                        .file(new MockMultipartFile("file", "statement.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes()))
+                        .param("bankType", "KASPI"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(statementWebApiClient);
+    }
+
+    @Test
+    void shouldRejectRequestWithForeignHost() throws Exception {
+        mockMvc.perform(get("/statements").header("Host", "rebinding.example"))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -62,7 +86,8 @@ class StatementWebControllerTest {
 
         mockMvc.perform(multipart("/import")
                         .file(new MockMultipartFile("file", "invalid.pdf", MediaType.APPLICATION_PDF_VALUE, "invalid".getBytes()))
-                        .param("bankType", "KASPI"))
+                        .param("bankType", "KASPI")
+                        .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(view().name("redirect:/import"))
                 .andExpect(flash().attributeExists("importError"));
@@ -94,7 +119,7 @@ class StatementWebControllerTest {
                 .thenThrow(new StatementApiException(404, "Not found", null));
 
         mockMvc.perform(get("/statements/99"))
-                .andExpect(status().isOk())
+                .andExpect(status().isNotFound())
                 .andExpect(view().name("error/404"))
                 .andExpect(model().attribute("message", "Запрошенная выписка не найдена."));
     }

@@ -1,6 +1,7 @@
 package com.esep.statementimport.kaspi;
 
 import com.esep.entity.BankOperationType;
+import com.esep.statementimport.exception.StatementFormatException;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -62,21 +63,42 @@ class KaspiTransactionParserTest {
 
     @Test
     void shouldParseTransferOperationTypeFromKaspiPdfLine() {
-        var transaction = transactionParser.parse("26.07.26 - 1 000,00 ? Перевод Нурбол К.", 0);
+        var transaction = transactionParser.parse("26.07.26 - 1 000,00 ? Перевод Тестов Т.", 0);
 
         assertThat(transaction.bankOperationType()).isEqualTo(BankOperationType.TRANSFER);
     }
 
     @Test
     void shouldParseTopUpOperationTypeFromKaspiPdfLine() {
-        var transaction = transactionParser.parse("26.07.26 + 5 000,00 ? Пополнение Балауса К.", 0);
+        var transaction = transactionParser.parse("26.07.26 + 5 000,00 ? Пополнение Тестова А.", 0);
 
         assertThat(transaction.bankOperationType()).isEqualTo(BankOperationType.TOP_UP);
     }
 
     @Test
-    void shouldRejectInvalidTransactionLine() {
-        assertThatThrownBy(() -> transactionParser.parse("MAGNUM -14500", 0))
-                .isInstanceOf(IllegalArgumentException.class);
+    void shouldParseCashWithdrawalAndOtherOperationTypes() {
+        var withdrawal = transactionParser.parse("30.08.26 - 9 000,00 ₸ Снятие Банкомат Тестовый", 0);
+        var fee = transactionParser.parse("31.08.26 - 500,00 ₸ Разное Плата за годовое обслуживание", 1);
+
+        assertThat(withdrawal.bankOperationType()).isEqualTo(BankOperationType.CASH_WITHDRAWAL);
+        assertThat(withdrawal.description()).isEqualTo("Банкомат Тестовый");
+        assertThat(fee.bankOperationType()).isEqualTo(BankOperationType.OTHER);
+        assertThat(fee.amount()).isEqualByComparingTo(new BigDecimal("-500.00"));
+    }
+
+    @Test
+    void shouldParseAmountWithMillions() {
+        var transaction = transactionParser.parse("01.08.26 + 1 234 567,89 ₸ Пополнение Тестов Т.", 0);
+
+        assertThat(transaction.amount()).isEqualByComparingTo(new BigDecimal("1234567.89"));
+    }
+
+    @Test
+    void shouldRejectInvalidTransactionLineWithoutExposingItsContent() {
+        assertThatThrownBy(() -> transactionParser.parse("MAGNUM -14500", 3))
+                .isInstanceOf(StatementFormatException.class)
+                .hasMessageContaining("3")
+                .hasMessageNotContaining("MAGNUM")
+                .hasMessageNotContaining("14500");
     }
 }

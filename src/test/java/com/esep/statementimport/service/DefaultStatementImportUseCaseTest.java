@@ -15,6 +15,12 @@ import com.esep.statementimport.interfaces.StatementParserRegistry;
 import com.esep.statementimport.model.ParsedStatement;
 import com.esep.statementimport.model.ParsedTransaction;
 import com.esep.statementimport.model.StatementImportResult;
+import com.esep.entity.BankOperationType;
+import com.esep.persistence.model.ExistingOperationKey;
+import com.esep.moneyflow.model.ClassificationSource;
+import com.esep.moneyflow.model.PurposeDecision;
+import com.esep.moneyflow.service.MoneyFlowClassifierRegistry;
+import com.esep.statementimport.kaspi.KaspiMoneyFlowClassifier;
 import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
@@ -75,8 +81,55 @@ class DefaultStatementImportUseCaseTest {
         assertThat(transactionCatalog.savedTransactions).hasSize(2);
         assertThat(transactionCatalog.savedTransactions.getFirst().merchantReference().value()).isEqualTo("1");
         assertThat(transactionCatalog.savedTransactions.get(1).merchantReference()).isNull();
+        assertThat(transactionCatalog.savedTransactions)
+                .extracting(command -> command.moneyFlow().source())
+                .containsOnly(ClassificationSource.BANK_RULE);
         verify(recognitionService, times(1)).recognize("MAGNUM");
         verify(recognitionService, times(1)).recognize("UNKNOWN SHOP");
+    }
+
+    @Test
+    void shouldSkipOperationsAlreadyImportedFromOverlappingStatementOfSameAccount() {
+        StatementParser parser = mock(StatementParser.class);
+        MerchantRecognitionService recognitionService = mock(MerchantRecognitionService.class);
+        RecordingStatementCatalog statementCatalog = new RecordingStatementCatalog(false);
+        RecordingTransactionCatalog transactionCatalog = new RecordingTransactionCatalog();
+        transactionCatalog.existingOperations = List.of(new ExistingOperationKey(
+                LocalDate.of(2026, 7, 12), new BigDecimal("-14500.00"), BankOperationType.PURCHASE, "MAGNUM"
+        ));
+        when(parser.parse(any())).thenReturn(new ParsedStatement("1234", null, null, List.of(
+                new ParsedTransaction(LocalDate.of(2026, 7, 12), "MAGNUM", new BigDecimal("-14500"), "KZT", BankOperationType.PURCHASE, 0),
+                new ParsedTransaction(LocalDate.of(2026, 7, 13), "UNKNOWN SHOP", new BigDecimal("-2100"), "KZT", BankOperationType.PURCHASE, 1)
+        )));
+        when(recognitionService.recognize("UNKNOWN SHOP")).thenReturn(notRecognized("UNKNOWN SHOP"));
+
+        StatementImportResult result = useCase(parser, recognitionService, statementCatalog, transactionCatalog)
+                .importStatement(new ByteArrayInputStream("overlap".getBytes()), BankType.KASPI, "statement.pdf");
+
+        assertThat(transactionCatalog.requestedAccount).isEqualTo("****1234");
+        assertThat(result.skippedDuplicateOperations()).isEqualTo(1);
+        assertThat(result.operationsTotal()).isEqualTo(1);
+        assertThat(transactionCatalog.savedTransactions).extracting(TransactionPersistenceCommand::description)
+                .containsExactly("UNKNOWN SHOP");
+        verify(recognitionService, never()).recognize("MAGNUM");
+    }
+
+    @Test
+    void shouldNotCompareWithPreviousStatementsWhenAccountIsUnknown() {
+        StatementParser parser = mock(StatementParser.class);
+        MerchantRecognitionService recognitionService = mock(MerchantRecognitionService.class);
+        RecordingTransactionCatalog transactionCatalog = new RecordingTransactionCatalog();
+        when(parser.parse(any())).thenReturn(new ParsedStatement(null, null, null, List.of(
+                new ParsedTransaction(LocalDate.of(2026, 7, 12), "UNKNOWN SHOP", new BigDecimal("-100"), "KZT", BankOperationType.PURCHASE, 0)
+        )));
+        when(recognitionService.recognize("UNKNOWN SHOP")).thenReturn(notRecognized("UNKNOWN SHOP"));
+
+        StatementImportResult result = useCase(parser, recognitionService, new RecordingStatementCatalog(false), transactionCatalog)
+                .importStatement(new ByteArrayInputStream("no-account".getBytes()), BankType.KASPI, "statement.pdf");
+
+        assertThat(transactionCatalog.requestedAccount).isNull();
+        assertThat(result.skippedDuplicateOperations()).isZero();
+        assertThat(transactionCatalog.savedTransactions).hasSize(1);
     }
 
     @Test
@@ -115,6 +168,8 @@ class DefaultStatementImportUseCaseTest {
                 processor,
                 new TransactionFingerprintGenerator(),
                 new StatementPeriodResolver(),
+                new MoneyFlowClassifierRegistry(List.of(new KaspiMoneyFlowClassifier())),
+                (description, amount, flowType) -> PurposeDecision.unknown(),
                 statementCatalog,
                 transactionCatalog
         );
@@ -160,10 +215,18 @@ class DefaultStatementImportUseCaseTest {
     private static final class RecordingTransactionCatalog implements TransactionCatalog {
 
         private List<TransactionPersistenceCommand> savedTransactions;
+        private List<ExistingOperationKey> existingOperations = List.of();
+        private String requestedAccount;
 
         @Override
         public void saveAll(String statementSourceFileHash, List<TransactionPersistenceCommand> transactions) {
             savedTransactions = transactions;
+        }
+
+        @Override
+        public List<ExistingOperationKey> findOperationKeys(BankType bankType, String maskedAccountNumber, LocalDate periodFrom, LocalDate periodTo) {
+            requestedAccount = maskedAccountNumber;
+            return existingOperations;
         }
     }
 }

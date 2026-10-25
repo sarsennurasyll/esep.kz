@@ -21,9 +21,9 @@ Before implementation, verify the following:
 3. Existing abstractions can be extended instead of modified.
 4. The change follows SOLID, Clean Architecture, and DDD principles where applicable.
 5. The change does not introduce unnecessary coupling to a specific bank, file type, parser, or AI provider.
-6. The scope contains only work explicitly requested by the user.
+6. The scope contains only work requested by the owner or required by the current roadmap and ADRs.
 
-If an architectural improvement is useful but outside the requested scope, do not apply it automatically. Explain the problem, its long-term benefit, and propose it as a separate step. Request confirmation when the improvement changes architecture or scope materially.
+Agents own technical and architectural decisions within the agreed product strategy: compare alternatives, choose the most justified option, record it in an ADR, implement, and verify. Ask the owner only for the cases listed in `CLAUDE.md` (spending money, publishing to real users, sending data to external services, irreversible actions on real user data, product-goal changes that depend on unvalidated demand, forbidden Git operations, missing secrets).
 
 ## Architecture Principles
 
@@ -73,7 +73,7 @@ Examples of future features include statement import, merchant knowledge, transa
 - Write comments only when they add necessary context; comments must be in Russian unless an external standard requires otherwise.
 - Prefer clear, small, cohesive classes over clever or compressed code.
 - Avoid speculative functionality, unused abstractions, and unrequested dependencies.
-- Do not implement AI, PDF parsing, APIs, persistence operations, or CRUD unless explicitly requested.
+- Do not implement AI, PDF parsing, APIs, persistence operations, or CRUD unless the current roadmap requires them.
 - Keep business rules deterministic and testable before introducing AI assistance.
 
 ## Development Rules
@@ -89,13 +89,13 @@ Examples of future features include statement import, merchant knowledge, transa
 
 Consider a task complete only after all of the following are done:
 
-1. Run the full test suite with `mvn test`.
-2. Confirm that every test passes.
-3. Check `git status`.
-4. Create a commit.
-5. Run `git push`.
+1. Run the full test suite with `mvn test` on JDK 21.
+2. Confirm that every test passes and record passed, failed, errored, and skipped counts.
+3. Review `git status` and `git diff`; make sure no secrets or personal financial data are included.
+4. Create a commit on the current work branch.
+5. Push the work branch.
 
-If `git push` requires confirmation or cannot be completed, stop and report the blocker.
+Steps 4 and 5 follow the Git Rules below. If tests fail or a data-leak risk remains, do not push. If `git push` requires confirmation or cannot be completed, stop and report the blocker.
 
 ## Commit Format
 
@@ -117,6 +117,16 @@ git commit -m "feat: добавлена поддержка реального ф
 git commit -m "fix: исправлен импорт банковской выписки"
 git commit -m "docs: добавлен ADR архитектуры persistence"
 ```
+
+### Public Materials and Authorship
+
+This repository is part of the owner's professional portfolio.
+
+- Do not add automatic signatures or promotional lines of AI tools to commits, pull requests, README, documentation, or other public materials. This includes `Generated with ...`, `Co-Authored-By: <AI tool>`, emoji footers, and similar trailers.
+- Keep Git author and committer as the repository-local identity of the owner's account (`sarsennurasyll`). Do not change global Git configuration.
+- Write commit messages, PR descriptions, and documentation as plain engineering text: what changed, why, how it was verified, and what is still limited. Avoid generic AI-style phrasing.
+- Do not claim that the work was done entirely by hand and do not state unverified achievements; describe actual decisions and results.
+- Do not rewrite Git history or force-push to remove old signatures; fix only editable materials and future commits.
 
 ## Task Completion Report
 
@@ -146,11 +156,14 @@ AI must never be the first decision mechanism. It is a fallback for unresolved c
 
 ## Git Rules
 
-- Do not execute Git commands, create commits, push branches, or alter history unless the user explicitly asks for the action.
-- Before proposing a commit, review the intended file scope and keep commits small, coherent, and reversible.
-- Use the commit-message language and format requested by the user or established by the repository.
+- Work happens on a dedicated work branch, never directly on `main`.
+- Agents may create work branches, stage reviewed files, commit verified changes, and push the work branch to `origin`.
+- Pushing to `main`, merging into `main`, force pushing, deleting branches, and rewriting history require explicit approval from the owner for each case.
+- Commits use the repository-local author configured for the owner's GitHub account. Do not change global Git settings and do not invent author emails.
+- Stage files by explicit path after reviewing each one; do not use `git add -A` or `git add .` without that review.
+- Keep commits small, coherent, and reversible; one logically complete change per commit.
 - Do not stage unrelated user changes.
-- Never use destructive Git commands such as `reset --hard` or force pushes without explicit approval.
+- Never use destructive Git commands such as `reset --hard` without explicit approval.
 
 ## Final Checklist
 

@@ -6,12 +6,16 @@ import com.esep.merchantresolver.interfaces.MerchantAliasCatalog;
 import com.esep.merchantresolver.interfaces.MerchantCatalog;
 import com.esep.merchantresolver.interfaces.MerchantResolver;
 import com.esep.merchantresolver.service.InMemoryMerchantResolver;
+import com.esep.moneyflow.interfaces.MoneyFlowClassifier;
+import com.esep.moneyflow.interfaces.MoneyPurposeResolver;
+import com.esep.moneyflow.service.MoneyFlowClassifierRegistry;
 import com.esep.normalization.interfaces.MerchantNormalizer;
 import com.esep.normalization.service.DefaultMerchantNormalizer;
 import com.esep.persistence.interfaces.StatementCatalog;
 import com.esep.persistence.interfaces.TransactionCatalog;
 import com.esep.statementimport.interfaces.StatementParser;
 import com.esep.statementimport.interfaces.StatementParserRegistry;
+import com.esep.statementimport.kaspi.KaspiMoneyFlowClassifier;
 import com.esep.statementimport.kaspi.KaspiStatementParser;
 import com.esep.statementimport.pdf.PdfBoxTextExtractor;
 import com.esep.statementimport.pdf.PdfTextExtractor;
@@ -21,6 +25,7 @@ import com.esep.statementimport.service.DefaultStatementImporter;
 import com.esep.statementimport.service.StatementPeriodResolver;
 import com.esep.statementimport.service.TransactionFingerprintGenerator;
 import com.esep.statementimport.service.TransactionImportProcessor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -33,8 +38,8 @@ import java.util.List;
 public class StatementImportConfiguration {
 
     @Bean
-    PdfTextExtractor pdfTextExtractor() {
-        return new PdfBoxTextExtractor();
+    PdfTextExtractor pdfTextExtractor(@Value("${esep.import.max-pdf-pages}") int maxPdfPages) {
+        return new PdfBoxTextExtractor(maxPdfPages);
     }
 
     @Bean
@@ -89,12 +94,24 @@ public class StatementImportConfiguration {
     }
 
     @Bean
+    MoneyFlowClassifier kaspiMoneyFlowClassifier() {
+        return new KaspiMoneyFlowClassifier();
+    }
+
+    @Bean
+    MoneyFlowClassifierRegistry moneyFlowClassifierRegistry(List<MoneyFlowClassifier> moneyFlowClassifiers) {
+        return new MoneyFlowClassifierRegistry(moneyFlowClassifiers);
+    }
+
+    @Bean
     DefaultStatementImportUseCase statementImportUseCase(
             StatementParserRegistry statementParserRegistry,
             DefaultStatementImporter statementImporter,
             TransactionImportProcessor transactionImportProcessor,
             TransactionFingerprintGenerator transactionFingerprintGenerator,
             StatementPeriodResolver statementPeriodResolver,
+            MoneyFlowClassifierRegistry moneyFlowClassifierRegistry,
+            MoneyPurposeResolver moneyPurposeResolver,
             StatementCatalog statementCatalog,
             TransactionCatalog transactionCatalog
     ) {
@@ -104,6 +121,8 @@ public class StatementImportConfiguration {
                 transactionImportProcessor,
                 transactionFingerprintGenerator,
                 statementPeriodResolver,
+                moneyFlowClassifierRegistry,
+                moneyPurposeResolver,
                 statementCatalog,
                 transactionCatalog
         );

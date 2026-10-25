@@ -1,7 +1,10 @@
 package com.esep.statementimport.api;
 
+import com.esep.security.LocalSecurityConfiguration;
+import org.springframework.context.annotation.Import;
 import com.esep.entity.BankType;
 import com.esep.statementimport.exception.StatementAlreadyImportedException;
+import com.esep.statementimport.exception.StatementFormatException;
 import com.esep.statementimport.exception.StatementWithoutTransactionsException;
 import com.esep.statementimport.exception.UnsupportedBankTypeException;
 import com.esep.statementimport.model.StatementImportResult;
@@ -21,12 +24,14 @@ import java.time.LocalDate;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(StatementImportController.class)
+@Import(LocalSecurityConfiguration.class)
 class StatementImportControllerTest {
 
     @Autowired
@@ -40,9 +45,11 @@ class StatementImportControllerTest {
         when(statementImportUseCase.importStatement(any(InputStream.class), eq(BankType.KASPI), eq("statement.pdf")))
                 .thenReturn(new StatementImportResult(
                         42L,
-                        4,
+                        6,
                         3,
                         1,
+                        2,
+                        0,
                         LocalDate.of(2026, 7, 1),
                         LocalDate.of(2026, 7, 31)
                 ));
@@ -52,9 +59,10 @@ class StatementImportControllerTest {
                         .param("bankType", "KASPI"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.statementId").value(42))
-                .andExpect(jsonPath("$.operationsTotal").value(4))
+                .andExpect(jsonPath("$.operationsTotal").value(6))
                 .andExpect(jsonPath("$.recognizedOperations").value(3))
                 .andExpect(jsonPath("$.unknownOperations").value(1))
+                .andExpect(jsonPath("$.withoutMerchantOperations").value(2))
                 .andExpect(jsonPath("$.periodFrom").value("2026-07-01"))
                 .andExpect(jsonPath("$.periodTo").value("2026-07-31"));
     }
@@ -101,6 +109,52 @@ class StatementImportControllerTest {
                         .file(pdfFile("statement.pdf", "content"))
                         .param("bankType", "HALYK"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldReturnBadRequestForStatementWithUnexpectedFormat() throws Exception {
+        when(statementImportUseCase.importStatement(any(InputStream.class), eq(BankType.KASPI), eq("statement.pdf")))
+                .thenThrow(new StatementFormatException("Сумма операций типа PURCHASE не совпадает с итогом в шапке выписки"));
+
+        mockMvc.perform(multipart("/api/statements/import")
+                        .file(pdfFile("statement.pdf", "content"))
+                        .param("bankType", "KASPI"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldNotExposeUnexpectedErrorDetails() throws Exception {
+        when(statementImportUseCase.importStatement(any(InputStream.class), eq(BankType.KASPI), eq("statement.pdf")))
+                .thenThrow(new IllegalStateException("01.08.26 - 1 000,00 ₸ Перевод Тестов Т."));
+
+        mockMvc.perform(multipart("/api/statements/import")
+                        .file(pdfFile("statement.pdf", "content"))
+                        .param("bankType", "KASPI"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.message").value("Внутренняя ошибка сервера"));
+    }
+
+    @Test
+    void shouldRejectCrossOriginImportFromBrowser() throws Exception {
+        mockMvc.perform(multipart("/api/statements/import")
+                        .file(pdfFile("statement.pdf", "content"))
+                        .param("bankType", "KASPI")
+                        .header("Origin", "https://attacker.example"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(statementImportUseCase);
+    }
+
+    @Test
+    void shouldAcceptImportFromOwnOrigin() throws Exception {
+        when(statementImportUseCase.importStatement(any(InputStream.class), eq(BankType.KASPI), eq("statement.pdf")))
+                .thenReturn(new StatementImportResult(42L, 1, 1, 0, 0, 0, LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31)));
+
+        mockMvc.perform(multipart("/api/statements/import")
+                        .file(pdfFile("statement.pdf", "content"))
+                        .param("bankType", "KASPI")
+                        .header("Origin", "http://localhost"))
+                .andExpect(status().isOk());
     }
 
     private MockMultipartFile pdfFile(String fileName, String content) {

@@ -42,14 +42,14 @@ class KaspiTransactionExtractorTest {
         String statementText = """
                 Дата Сумма Операция Детали
                 26.07.26 - 4 670,00 ? Покупка YANDEX.GO
-                26.07.26 + 2 270,00 ? Пополнение Балауса А.
+                26.07.26 + 2 270,00 ? Пополнение Тестова А.
                 """;
 
         RawStatement rawStatement = transactionExtractor.extract(statementText);
 
         assertThat(rawStatement.transactionLines()).containsExactly(
                 "26.07.26 - 4 670,00 ? Покупка YANDEX.GO",
-                "26.07.26 + 2 270,00 ? Пополнение Балауса А."
+                "26.07.26 + 2 270,00 ? Пополнение Тестова А."
         );
     }
 

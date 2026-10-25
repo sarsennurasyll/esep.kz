@@ -1,6 +1,9 @@
 package com.esep.analytics.web;
 
+import com.esep.security.LocalSecurityConfiguration;
+import org.springframework.context.annotation.Import;
 import com.esep.analytics.api.dto.AnalyticsSummaryResponse;
+import com.esep.analytics.api.dto.MoneyFlowReportResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -10,13 +13,16 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @WebMvcTest(DashboardWebController.class)
+@Import(LocalSecurityConfiguration.class)
 class DashboardWebControllerTest {
 
     @Autowired
@@ -33,10 +39,17 @@ class DashboardWebControllerTest {
         when(analyticsWebApiClient.getCategoryExpenses()).thenReturn(List.of());
         when(analyticsWebApiClient.getTopMerchants()).thenReturn(List.of());
         when(analyticsWebApiClient.getMonthlyAnalytics()).thenReturn(List.of());
+        when(analyticsWebApiClient.getMoneyFlowReport()).thenReturn(new MoneyFlowReportResponse(
+                BigDecimal.ZERO, new BigDecimal("39000"), new BigDecimal("20000"), BigDecimal.ZERO, BigDecimal.ZERO,
+                new BigDecimal("30000"), BigDecimal.ZERO, new BigDecimal("70000"), new BigDecimal("35000"),
+                new BigDecimal("101500"), new BigDecimal("95500"), new BigDecimal("0.6897"), new BigDecimal("0.5759")
+        ));
 
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("dashboard"))
-                .andExpect(model().attributeExists("summary", "categories", "merchants", "monthly"));
+                .andExpect(model().attributeExists("summary", "moneyFlow", "categories", "merchants", "monthly"))
+                .andExpect(content().string(containsString("Движение денег")))
+                .andExpect(content().string(containsString("Назначение неизвестно")));
     }
 }

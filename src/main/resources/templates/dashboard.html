@@ -12,15 +12,29 @@
     <div class="row g-3 mb-4">
         <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Выписки</span><div class="h3 mb-0" th:text="${summary.totalStatements}">0</div></div></div></div>
         <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Операции</span><div class="h3 mb-0" th:text="${summary.totalTransactions}">0</div></div></div></div>
-        <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Доходы</span><div class="h3 mb-0 amount-income" th:text="${summary.totalIncome}">0</div></div></div></div>
-        <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Расходы</span><div class="h3 mb-0 amount-expense" th:text="${summary.totalExpense}">0</div></div></div></div>
+        <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Все поступления</span><div class="h3 mb-0 amount-income" th:text="${summary.totalIncome}">0</div></div></div></div>
+        <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Все списания</span><div class="h3 mb-0 amount-expense" th:text="${summary.totalExpense}">0</div></div></div></div>
         <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Распознано</span><div class="h3 mb-0" th:text="${summary.recognizedTransactions}">0</div></div></div></div>
         <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Не распознано</span><div class="h3 mb-0" th:text="${summary.unknownTransactions}">0</div></div></div></div>
     </div>
 
+    <div class="card statement-card mb-4" id="money-flow"><div class="card-body">
+        <h2 class="h5">Движение денег</h2>
+        <p class="text-secondary small">Свои переводы и внесение собственных наличных не считаются ни доходом, ни расходом. Суммы, назначение которых по выписке определить нельзя, показаны отдельно.</p>
+        <div class="table-responsive"><table class="table table-sm mb-0"><tbody>
+            <tr><td>Доход, отмеченный вами</td><td class="text-end amount-income" th:text="${moneyFlow.income}">0</td></tr>
+            <tr><td>Расходы: покупки за вычетом возвратов и комиссии</td><td class="text-end amount-expense" th:text="${moneyFlow.expense}">0</td></tr>
+            <tr><td>Снятие наличных</td><td class="text-end" th:text="${moneyFlow.cashWithdrawals}">0</td></tr>
+            <tr><td>Семья и подарки: получено / отправлено</td><td class="text-end"><span th:text="${moneyFlow.familyInflow}">0</span> / <span th:text="${moneyFlow.familyOutflow}">0</span></td></tr>
+            <tr><td>Свои деньги: поступило / ушло</td><td class="text-end"><span th:text="${moneyFlow.internalInflow}">0</span> / <span th:text="${moneyFlow.internalOutflow}">0</span></td></tr>
+            <tr><td>Назначение неизвестно: поступления / списания</td><td class="text-end"><span th:text="${moneyFlow.unknownInflow}">0</span> / <span th:text="${moneyFlow.unknownOutflow}">0</span></td></tr>
+            <tr class="table-light"><td>Доля сумм с неизвестным назначением: поступления / списания, включая наличные</td><td class="text-end"><span th:text="${#numbers.formatPercent(moneyFlow.unknownInflowShare, 1, 1)}">0%</span> / <span th:text="${#numbers.formatPercent(moneyFlow.unknownOutflowShare, 1, 1)}">0%</span></td></tr>
+        </tbody></table></div>
+    </div></div>
+
     <div class="row g-4">
         <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Расходы по категориям</h2><canvas id="categoriesChart"></canvas></div></div></div>
-        <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Доходы и расходы по месяцам</h2><canvas id="monthlyChart"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Поступления и списания по месяцам</h2><canvas id="monthlyChart"></canvas></div></div></div>
         <div class="col-12"><div class="card statement-card"><div class="card-body"><h2 class="h5">Топ мест расходов</h2><canvas id="merchantsChart"></canvas></div></div></div>
         <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Расходы по типам получателей</h2><canvas id="merchantTypesChart"></canvas></div></div></div>
         <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Топ переводов людям</h2><canvas id="peopleChart"></canvas></div></div></div>

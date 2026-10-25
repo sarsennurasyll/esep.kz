@@ -1,5 +1,7 @@
 package com.esep.statementimport.api;
 
+import com.esep.security.LocalSecurityConfiguration;
+import org.springframework.context.annotation.Import;
 import com.esep.entity.BankType;
 import com.esep.entity.TransactionType;
 import com.esep.statementimport.query.interfaces.StatementReadQuery;
@@ -24,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(StatementQueryController.class)
+@Import(LocalSecurityConfiguration.class)
 class StatementQueryControllerTest {
 
     @Autowired

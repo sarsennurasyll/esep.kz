@@ -44,23 +44,25 @@ class KaspiImportPipelineIntegrationTest {
             var importResult = statementImporter.importStatement(statement);
 
             long expectedRecognizedMerchants = statement.transactions().stream()
+                    .filter(transaction -> transaction.bankOperationType().merchantCounterpartyPossible())
                     .filter(transaction -> recognitionService.recognize(transaction.description()).merchantMatch().matched())
                     .count();
 
             assertThat(statement.transactions()).isNotEmpty();
             assertThat(importResult.totalTransactions()).isEqualTo(statement.transactions().size());
             assertThat(importResult.recognizedMerchants()).isEqualTo(expectedRecognizedMerchants);
-            assertThat(importResult.unknownMerchants())
-                    .isEqualTo(importResult.totalTransactions() - importResult.recognizedMerchants());
-            assertRecognizedIfPresent(statement, "MAGNUM");
-            assertRecognizedIfPresent(statement, "YANDEX");
+            assertThat(importResult.recognizedMerchants() + importResult.unknownMerchants() + importResult.withoutMerchantOperations())
+                    .isEqualTo(importResult.totalTransactions());
+            assertRecognizedIfPresent(statement, "MAGNUM CASH&CARRY");
+            assertRecognizedIfPresent(statement, "YANDEX.GO");
             assertRecognizedIfPresent(statement, "EUROPHARMA");
         }
     }
 
-    private void assertRecognizedIfPresent(ParsedStatement statement, String marker) {
+    // Сравнивается точное известное написание: подстрока вроде «YANDEX» объединила бы разные сервисы одной компании.
+    private void assertRecognizedIfPresent(ParsedStatement statement, String knownMerchantName) {
         statement.transactions().stream()
-                .filter(transaction -> transaction.description().toUpperCase(Locale.ROOT).contains(marker))
+                .filter(transaction -> transaction.description().toUpperCase(Locale.ROOT).equals(knownMerchantName))
                 .findFirst()
                 .ifPresent(transaction -> assertThat(
                         recognitionService.recognize(transaction.description()).merchantMatch().matched()

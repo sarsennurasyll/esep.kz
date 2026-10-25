@@ -10,6 +10,8 @@ public record StatementImportResult(
         int operationsTotal,
         int recognizedOperations,
         int unknownOperations,
+        int withoutMerchantOperations,
+        int skippedDuplicateOperations,
         LocalDate periodFrom,
         LocalDate periodTo
 ) {

@@ -1,5 +1,6 @@
 package com.esep.persistence.jpa.adapter;
 
+import com.esep.entity.BankType;
 import com.esep.entity.Merchant;
 import com.esep.entity.Statement;
 import com.esep.persistence.interfaces.TransactionCatalog;
@@ -8,9 +9,11 @@ import com.esep.persistence.jpa.mapper.TransactionJpaMapper;
 import com.esep.persistence.jpa.repository.MerchantJpaRepository;
 import com.esep.persistence.jpa.repository.StatementJpaRepository;
 import com.esep.persistence.jpa.repository.TransactionJpaRepository;
+import com.esep.persistence.model.ExistingOperationKey;
 import com.esep.persistence.model.TransactionPersistenceCommand;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -49,6 +52,16 @@ public class TransactionCatalogJpaAdapter implements TransactionCatalog {
                 .toList();
 
         transactionJpaRepository.saveAll(entities);
+    }
+
+    @Override
+    public List<ExistingOperationKey> findOperationKeys(
+            BankType bankType,
+            String maskedAccountNumber,
+            LocalDate periodFrom,
+            LocalDate periodTo
+    ) {
+        return transactionJpaRepository.findOperationKeys(bankType, maskedAccountNumber, periodFrom, periodTo);
     }
 
     private Merchant resolveMerchant(TransactionPersistenceCommand command) {

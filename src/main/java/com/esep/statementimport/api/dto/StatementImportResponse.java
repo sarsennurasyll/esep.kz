@@ -12,6 +12,8 @@ public record StatementImportResponse(
         int operationsTotal,
         int recognizedOperations,
         int unknownOperations,
+        int withoutMerchantOperations,
+        int skippedDuplicateOperations,
         LocalDate periodFrom,
         LocalDate periodTo
 ) {
@@ -22,6 +24,8 @@ public record StatementImportResponse(
                 result.operationsTotal(),
                 result.recognizedOperations(),
                 result.unknownOperations(),
+                result.withoutMerchantOperations(),
+                result.skippedDuplicateOperations(),
                 result.periodFrom(),
                 result.periodTo()
         );

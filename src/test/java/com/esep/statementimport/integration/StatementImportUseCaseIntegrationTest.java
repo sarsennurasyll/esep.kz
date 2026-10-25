@@ -14,6 +14,7 @@ import com.esep.normalization.service.DefaultMerchantNormalizer;
 import com.esep.persistence.interfaces.StatementCatalog;
 import com.esep.persistence.interfaces.TransactionCatalog;
 import com.esep.persistence.model.StatementPersistenceCommand;
+import com.esep.persistence.model.ExistingOperationKey;
 import com.esep.persistence.model.TransactionPersistenceCommand;
 import com.esep.statementimport.interfaces.StatementParser;
 import com.esep.statementimport.interfaces.StatementParserRegistry;
@@ -26,6 +27,9 @@ import com.esep.statementimport.service.DefaultStatementImporter;
 import com.esep.statementimport.service.StatementPeriodResolver;
 import com.esep.statementimport.service.TransactionFingerprintGenerator;
 import com.esep.statementimport.service.TransactionImportProcessor;
+import com.esep.moneyflow.model.PurposeDecision;
+import com.esep.moneyflow.service.MoneyFlowClassifierRegistry;
+import com.esep.statementimport.kaspi.KaspiMoneyFlowClassifier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 
@@ -71,6 +75,8 @@ class StatementImportUseCaseIntegrationTest {
                 new TransactionImportProcessor(recognitionService),
                 new TransactionFingerprintGenerator(),
                 new StatementPeriodResolver(),
+                new MoneyFlowClassifierRegistry(List.of(new KaspiMoneyFlowClassifier())),
+                (description, amount, flowType) -> PurposeDecision.unknown(),
                 statementCatalog,
                 transactionCatalog
         );
@@ -112,6 +118,12 @@ class StatementImportUseCaseIntegrationTest {
         @Override
         public void saveAll(String statementSourceFileHash, List<TransactionPersistenceCommand> transactions) {
             this.transactions = transactions;
+        }
+
+        @Override
+        public List<ExistingOperationKey> findOperationKeys(BankType bankType, String maskedAccountNumber,
+                                                            java.time.LocalDate periodFrom, java.time.LocalDate periodTo) {
+            return List.of();
         }
     }
 }

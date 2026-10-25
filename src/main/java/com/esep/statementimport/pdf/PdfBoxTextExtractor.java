@@ -13,6 +13,22 @@ import java.io.InputStream;
  */
 public class PdfBoxTextExtractor implements PdfTextExtractor {
 
+    // Шестимесячная выписка Kaspi Gold занимает около 25 страниц; лимит защищает от разбора чрезмерно больших документов.
+    private static final int DEFAULT_MAX_PAGES = 200;
+
+    private final int maxPages;
+
+    public PdfBoxTextExtractor() {
+        this(DEFAULT_MAX_PAGES);
+    }
+
+    public PdfBoxTextExtractor(int maxPages) {
+        if (maxPages <= 0) {
+            throw new IllegalArgumentException("Максимальное число страниц должно быть положительным.");
+        }
+        this.maxPages = maxPages;
+    }
+
     @Override
     public String extract(InputStream input) {
         try (
@@ -20,6 +36,9 @@ public class PdfBoxTextExtractor implements PdfTextExtractor {
                 RandomAccessReadBuffer buffer = new RandomAccessReadBuffer(source);
                 PDDocument document = Loader.loadPDF(buffer)
         ) {
+            if (document.getNumberOfPages() > maxPages) {
+                throw new PdfExtractionException("PDF-документ содержит больше " + maxPages + " страниц.", null);
+            }
             return new PDFTextStripper().getText(document);
         } catch (IOException exception) {
             throw new PdfExtractionException("Не удалось извлечь текст из PDF-документа.", exception);

@@ -2,6 +2,9 @@ package com.esep.statementimport.service;
 
 import com.esep.entity.BankType;
 import com.esep.entity.TransactionType;
+import com.esep.moneyflow.interfaces.MoneyPurposeResolver;
+import com.esep.moneyflow.model.MoneyFlowClassification;
+import com.esep.moneyflow.service.MoneyFlowClassifierRegistry;
 import com.esep.persistence.interfaces.StatementCatalog;
 import com.esep.persistence.interfaces.TransactionCatalog;
 import com.esep.persistence.model.StatementPersistenceCommand;
@@ -30,8 +33,11 @@ public class DefaultStatementImportUseCase {
     private final TransactionImportProcessor transactionImportProcessor;
     private final TransactionFingerprintGenerator transactionFingerprintGenerator;
     private final StatementPeriodResolver statementPeriodResolver;
+    private final MoneyFlowClassifierRegistry moneyFlowClassifierRegistry;
+    private final MoneyPurposeResolver moneyPurposeResolver;
     private final StatementCatalog statementCatalog;
     private final TransactionCatalog transactionCatalog;
+    private final OverlappingOperationFilter overlappingOperationFilter = new OverlappingOperationFilter();
 
     public DefaultStatementImportUseCase(
             StatementParserRegistry statementParserRegistry,
@@ -39,6 +45,8 @@ public class DefaultStatementImportUseCase {
             TransactionImportProcessor transactionImportProcessor,
             TransactionFingerprintGenerator transactionFingerprintGenerator,
             StatementPeriodResolver statementPeriodResolver,
+            MoneyFlowClassifierRegistry moneyFlowClassifierRegistry,
+            MoneyPurposeResolver moneyPurposeResolver,
             StatementCatalog statementCatalog,
             TransactionCatalog transactionCatalog
     ) {
@@ -47,6 +55,8 @@ public class DefaultStatementImportUseCase {
         this.transactionImportProcessor = transactionImportProcessor;
         this.transactionFingerprintGenerator = transactionFingerprintGenerator;
         this.statementPeriodResolver = statementPeriodResolver;
+        this.moneyFlowClassifierRegistry = moneyFlowClassifierRegistry;
+        this.moneyPurposeResolver = moneyPurposeResolver;
         this.statementCatalog = statementCatalog;
         this.transactionCatalog = transactionCatalog;
     }
@@ -63,12 +73,19 @@ public class DefaultStatementImportUseCase {
         ParsedStatement parsedStatement = statementParserRegistry.getParser(bankType)
                 .parse(new ByteArrayInputStream(sourceFile));
         StatementPeriod statementPeriod = statementPeriodResolver.resolve(parsedStatement);
-        List<ProcessedTransaction> processedTransactions = parsedStatement.transactions().stream()
+        String maskedAccountNumber = maskAccountNumber(parsedStatement.accountNumber());
+        OverlappingOperationFilter.OverlapResult overlap = excludeAlreadyImportedOperations(
+                parsedStatement,
+                bankType,
+                maskedAccountNumber,
+                statementPeriod
+        );
+        List<ProcessedTransaction> processedTransactions = overlap.newTransactions().stream()
                 .map(transactionImportProcessor::process)
                 .toList();
 
         Long statementId = statementCatalog.save(toStatementCommand(
-                parsedStatement,
+                maskedAccountNumber,
                 statementPeriod,
                 bankType,
                 originalFileName,
@@ -77,7 +94,7 @@ public class DefaultStatementImportUseCase {
         transactionCatalog.saveAll(
                 sourceFileHash,
                 processedTransactions.stream()
-                        .map(transaction -> toTransactionCommand(transaction, sourceFileHash))
+                        .map(transaction -> toTransactionCommand(transaction, bankType, sourceFileHash))
                         .toList()
         );
 
@@ -87,13 +104,36 @@ public class DefaultStatementImportUseCase {
                 importResult.totalTransactions(),
                 importResult.recognizedMerchants(),
                 importResult.unknownMerchants(),
+                importResult.withoutMerchantOperations(),
+                overlap.skippedDuplicates(),
                 statementPeriod.periodFrom(),
                 statementPeriod.periodTo()
         );
     }
 
+    // Без идентичности счёта выписки нельзя надёжно связать, поэтому сравнение с прежними выписками не выполняется.
+    private OverlappingOperationFilter.OverlapResult excludeAlreadyImportedOperations(
+            ParsedStatement parsedStatement,
+            BankType bankType,
+            String maskedAccountNumber,
+            StatementPeriod statementPeriod
+    ) {
+        if (maskedAccountNumber == null) {
+            return new OverlappingOperationFilter.OverlapResult(parsedStatement.transactions(), 0);
+        }
+        return overlappingOperationFilter.filter(
+                parsedStatement.transactions(),
+                transactionCatalog.findOperationKeys(
+                        bankType,
+                        maskedAccountNumber,
+                        statementPeriod.periodFrom(),
+                        statementPeriod.periodTo()
+                )
+        );
+    }
+
     private StatementPersistenceCommand toStatementCommand(
-            ParsedStatement statement,
+            String maskedAccountNumber,
             StatementPeriod statementPeriod,
             BankType bankType,
             String originalFileName,
@@ -102,7 +142,7 @@ public class DefaultStatementImportUseCase {
         return new StatementPersistenceCommand(
                 bankType,
                 originalFileName,
-                maskAccountNumber(statement.accountNumber()),
+                maskedAccountNumber,
                 sourceFileHash,
                 statementPeriod.periodFrom(),
                 statementPeriod.periodTo()
@@ -111,10 +151,17 @@ public class DefaultStatementImportUseCase {
 
     private TransactionPersistenceCommand toTransactionCommand(
             ProcessedTransaction processedTransaction,
+            BankType bankType,
             String sourceFileHash
     ) {
         var transaction = processedTransaction.transaction();
         var recognition = processedTransaction.merchantRecognition();
+        MoneyFlowClassification moneyFlow = moneyFlowClassifierRegistry.classify(
+                bankType,
+                transaction.bankOperationType(),
+                transaction.amount(),
+                transaction.description()
+        );
 
         return new TransactionPersistenceCommand(
                 transaction.date(),
@@ -123,6 +170,8 @@ public class DefaultStatementImportUseCase {
                 transaction.currency(),
                 financialTransactionType(transaction),
                 transaction.bankOperationType(),
+                moneyFlow,
+                moneyPurposeResolver.decide(transaction.description(), transaction.amount(), moneyFlow.flowType()),
                 recognition.merchantMatch().merchantReference(),
                 transactionFingerprintGenerator.generate(
                         sourceFileHash,

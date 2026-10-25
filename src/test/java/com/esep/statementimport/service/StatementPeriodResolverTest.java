@@ -32,6 +32,21 @@ class StatementPeriodResolverTest {
     }
 
     @Test
+    void shouldPreferStatementPeriodFromDocument() {
+        ParsedStatement statement = new ParsedStatement(
+                null,
+                LocalDate.of(2026, 7, 1),
+                LocalDate.of(2026, 7, 31),
+                List.of(transaction(LocalDate.of(2026, 7, 14)), transaction(LocalDate.of(2026, 7, 2)))
+        );
+
+        StatementPeriod period = resolver.resolve(statement);
+
+        assertThat(period.periodFrom()).isEqualTo(LocalDate.of(2026, 7, 1));
+        assertThat(period.periodTo()).isEqualTo(LocalDate.of(2026, 7, 31));
+    }
+
+    @Test
     void shouldRejectStatementWithoutTransactions() {
         ParsedStatement statement = new ParsedStatement(null, null, null, List.of());
 
