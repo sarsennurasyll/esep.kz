@@ -1,5 +1,6 @@
 package com.esep.statementimport.pdf;
 
+import com.esep.statementimport.model.ImportErrorCode;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.encryption.AccessPermission;
@@ -56,7 +57,8 @@ class PdfBoxTextExtractorTest {
 
         assertThatThrownBy(() -> pdfTextExtractor.extract(new ByteArrayInputStream(fakePdf)))
                 .isInstanceOf(PdfExtractionException.class)
-                .hasMessageContaining("не является PDF");
+                .hasMessageContaining("не является PDF")
+                .extracting(exception -> ((PdfExtractionException) exception).code()).isEqualTo(ImportErrorCode.PDF_NOT_PDF);
     }
 
     @Test
@@ -65,7 +67,8 @@ class PdfBoxTextExtractorTest {
 
         assertThatThrownBy(() -> pdfTextExtractor.extract(new ByteArrayInputStream(corrupted)))
                 .isInstanceOf(PdfExtractionException.class)
-                .hasMessageContaining("повреждён");
+                .hasMessageContaining("повреждён")
+                .extracting(exception -> ((PdfExtractionException) exception).code()).isEqualTo(ImportErrorCode.PDF_CORRUPTED);
     }
 
     @Test
@@ -82,7 +85,8 @@ class PdfBoxTextExtractorTest {
 
         assertThatThrownBy(() -> pdfTextExtractor.extract(new ByteArrayInputStream(encrypted)))
                 .isInstanceOf(PdfExtractionException.class)
-                .hasMessageContaining("паролем");
+                .hasMessageContaining("паролем")
+                .extracting(exception -> ((PdfExtractionException) exception).code()).isEqualTo(ImportErrorCode.PDF_ENCRYPTED);
     }
 
     @Test

@@ -1,6 +1,7 @@
 package com.esep.common.web;
 
 import com.esep.common.api.ApiErrorResponse;
+import com.esep.statementimport.model.ImportErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -26,7 +27,7 @@ public class UploadLimitExceptionHandler {
         if (path.startsWith("/api/")) {
             return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(new ApiErrorResponse(MESSAGE));
+                    .body(new ApiErrorResponse(MESSAGE, ImportErrorCode.UPLOAD_TOO_LARGE.name()));
         }
         response.setStatus(HttpStatus.PAYLOAD_TOO_LARGE.value());
         return new ModelAndView("error/413");

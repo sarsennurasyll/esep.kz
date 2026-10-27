@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Import;
 import com.esep.entity.BankType;
 import com.esep.statementimport.exception.StatementAlreadyImportedException;
 import com.esep.statementimport.exception.StatementFormatException;
+import com.esep.statementimport.model.ImportErrorCode;
 import com.esep.statementimport.exception.StatementWithoutTransactionsException;
 import com.esep.statementimport.exception.UnsupportedBankTypeException;
 import com.esep.statementimport.model.StatementImportResult;
@@ -127,14 +128,29 @@ class StatementImportControllerTest {
     @Test
     void shouldReturnPayloadTooLargeAndUnprocessableForPdfLimits() throws Exception {
         when(statementImportUseCase.importStatement(any(InputStream.class), eq(BankType.KASPI), eq("statement.pdf")))
-                .thenThrow(new PdfLimitExceededException("PDF-документ содержит больше 200 страниц."))
+                .thenThrow(new PdfLimitExceededException(ImportErrorCode.PDF_TOO_MANY_PAGES, "PDF-документ содержит больше 200 страниц."))
                 .thenThrow(new PdfProcessingTimeoutException("Обработка PDF-документа заняла слишком много времени и была остановлена."));
 
         mockMvc.perform(multipart("/api/statements/import").file(pdfFile("statement.pdf", "content")).param("bankType", "KASPI"))
                 .andExpect(status().isPayloadTooLarge())
-                .andExpect(jsonPath("$.message").value("PDF-документ содержит больше 200 страниц."));
+                .andExpect(jsonPath("$.message").value("PDF-документ содержит больше 200 страниц."))
+                .andExpect(jsonPath("$.code").value("PDF_TOO_MANY_PAGES"));
         mockMvc.perform(multipart("/api/statements/import").file(pdfFile("statement.pdf", "content")).param("bankType", "KASPI"))
                 .andExpect(status().isUnprocessableEntity());
+    }
+
+    @Test
+    void shouldReturnEncryptedCodeAndNoCodeForUntypedErrors() throws Exception {
+        when(statementImportUseCase.importStatement(any(InputStream.class), eq(BankType.KASPI), eq("statement.pdf")))
+                .thenThrow(new PdfExtractionException(ImportErrorCode.PDF_ENCRYPTED, "PDF-документ защищён паролем. Загрузите выписку без пароля.", null))
+                .thenThrow(new StatementWithoutTransactionsException());
+
+        mockMvc.perform(multipart("/api/statements/import").file(pdfFile("statement.pdf", "content")).param("bankType", "KASPI"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("PDF_ENCRYPTED"));
+        mockMvc.perform(multipart("/api/statements/import").file(pdfFile("statement.pdf", "content")).param("bankType", "KASPI"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").doesNotExist());
     }
 
     @Test

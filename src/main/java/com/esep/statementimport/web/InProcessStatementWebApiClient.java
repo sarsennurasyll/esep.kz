@@ -69,6 +69,7 @@ public class InProcessStatementWebApiClient implements StatementWebApiClient {
         } catch (RuntimeException exception) {
             throw new StatementApiException(
                     StatementApiErrors.statusOf(exception).value(),
+                    StatementApiErrors.codeOf(exception),
                     StatementApiErrors.clientMessageOf(exception),
                     exception
             );

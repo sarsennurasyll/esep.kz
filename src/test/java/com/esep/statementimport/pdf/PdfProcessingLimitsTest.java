@@ -1,5 +1,6 @@
 package com.esep.statementimport.pdf;
 
+import com.esep.statementimport.model.ImportErrorCode;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -31,7 +32,8 @@ class PdfProcessingLimitsTest {
         );
 
         assertThatThrownBy(() -> extractor.extract(new ByteArrayInputStream(pdf)))
-                .isInstanceOf(PdfProcessingTimeoutException.class);
+                .isInstanceOf(PdfProcessingTimeoutException.class)
+                .extracting(exception -> ((PdfExtractionException) exception).code()).isEqualTo(ImportErrorCode.PDF_TIMEOUT);
         // Старт, проверка после загрузки, проверка после первой страницы — остальные четыре страницы не разбирались.
         assertThat(clockCalls.get()).isEqualTo(3);
     }
@@ -44,7 +46,8 @@ class PdfProcessingLimitsTest {
         );
 
         assertThatThrownBy(() -> extractor.extract(new ByteArrayInputStream(pdf)))
-                .isInstanceOf(PdfLimitExceededException.class);
+                .isInstanceOf(PdfLimitExceededException.class)
+                .extracting(exception -> ((PdfExtractionException) exception).code()).isEqualTo(ImportErrorCode.PDF_TOO_MUCH_TEXT);
     }
 
     @Test
@@ -52,7 +55,8 @@ class PdfProcessingLimitsTest {
         byte[] pdf = textPdf(3, "Synthetic page");
 
         assertThatThrownBy(() -> new PdfBoxTextExtractor(2).extract(new ByteArrayInputStream(pdf)))
-                .isInstanceOf(PdfLimitExceededException.class);
+                .isInstanceOf(PdfLimitExceededException.class)
+                .extracting(exception -> ((PdfExtractionException) exception).code()).isEqualTo(ImportErrorCode.PDF_TOO_MANY_PAGES);
     }
 
     @Test

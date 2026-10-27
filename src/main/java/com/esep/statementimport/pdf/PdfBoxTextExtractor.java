@@ -1,5 +1,6 @@
 package com.esep.statementimport.pdf;
 
+import com.esep.statementimport.model.ImportErrorCode;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
@@ -51,24 +52,24 @@ public class PdfBoxTextExtractor implements PdfTextExtractor {
         long deadline = nanoClock.getAsLong() + limits.maxDuration().toNanos();
         byte[] content = readAll(input);
         if (!hasPdfSignature(content)) {
-            throw new PdfExtractionException("Файл не является PDF-документом.", null);
+            throw new PdfExtractionException(ImportErrorCode.PDF_NOT_PDF, "Файл не является PDF-документом.", null);
         }
 
         MemoryUsageSetting memory = MemoryUsageSetting.setupMainMemoryOnly(limits.maxMemoryBytes());
         try (PDDocument document = Loader.loadPDF(new RandomAccessReadBuffer(content), memory.streamCache)) {
             int pages = document.getNumberOfPages();
             if (pages > limits.maxPages()) {
-                throw new PdfLimitExceededException("PDF-документ содержит больше " + limits.maxPages() + " страниц.");
+                throw new PdfLimitExceededException(ImportErrorCode.PDF_TOO_MANY_PAGES, "PDF-документ содержит больше " + limits.maxPages() + " страниц.");
             }
             checkDeadline(deadline);
             return extractPages(document, pages, deadline);
         } catch (InvalidPasswordException exception) {
-            throw new PdfExtractionException("PDF-документ защищён паролем. Загрузите выписку без пароля.", exception);
+            throw new PdfExtractionException(ImportErrorCode.PDF_ENCRYPTED, "PDF-документ защищён паролем. Загрузите выписку без пароля.", exception);
         } catch (IOException exception) {
             if (exception.getMessage() != null && exception.getMessage().contains(MEMORY_LIMIT_MESSAGE)) {
-                throw new PdfLimitExceededException("PDF-документ требует слишком много памяти для обработки.");
+                throw new PdfLimitExceededException(ImportErrorCode.PDF_TOO_COMPLEX, "PDF-документ требует слишком много памяти для обработки.");
             }
-            throw new PdfExtractionException("Не удалось прочитать PDF-документ: файл повреждён или имеет неподдерживаемую структуру.", exception);
+            throw new PdfExtractionException(ImportErrorCode.PDF_CORRUPTED, "Не удалось прочитать PDF-документ: файл повреждён или имеет неподдерживаемую структуру.", exception);
         }
     }
 
@@ -80,7 +81,7 @@ public class PdfBoxTextExtractor implements PdfTextExtractor {
             stripper.setEndPage(page);
             text.append(stripper.getText(document));
             if (text.length() > limits.maxTextCharacters()) {
-                throw new PdfLimitExceededException("PDF-документ содержит слишком много текста для выписки.");
+                throw new PdfLimitExceededException(ImportErrorCode.PDF_TOO_MUCH_TEXT, "PDF-документ содержит слишком много текста для выписки.");
             }
             checkDeadline(deadline);
         }
@@ -97,7 +98,7 @@ public class PdfBoxTextExtractor implements PdfTextExtractor {
         try (InputStream source = input) {
             return source.readAllBytes();
         } catch (IOException exception) {
-            throw new PdfExtractionException("Не удалось прочитать загруженный файл.", exception);
+            throw new PdfExtractionException(ImportErrorCode.PDF_CORRUPTED, "Не удалось прочитать загруженный файл.", exception);
         }
     }
 

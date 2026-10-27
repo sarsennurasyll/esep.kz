@@ -5,6 +5,8 @@ import com.esep.statementimport.api.StatementImportController;
 import com.esep.statementimport.api.StatementQueryController;
 import com.esep.statementimport.exception.StatementAlreadyImportedException;
 import com.esep.statementimport.exception.StatementFormatException;
+import com.esep.statementimport.model.ImportErrorCode;
+import com.esep.statementimport.pdf.PdfExtractionException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockMultipartFile;
@@ -43,6 +45,18 @@ class InProcessStatementWebApiClientTest {
                 .isInstanceOfSatisfying(StatementApiException.class, exception -> {
                     assertThat(exception.getStatusCode()).isEqualTo(500);
                     assertThat(exception.getMessage()).doesNotContain("Тестов");
+                });
+    }
+
+    @Test
+    void shouldPassTypedCodeToWebLayer() throws Exception {
+        when(importController.importStatement(any(), any(BankType.class)))
+                .thenThrow(new PdfExtractionException(ImportErrorCode.PDF_ENCRYPTED, "PDF-документ защищён паролем.", null));
+
+        assertThatThrownBy(() -> client.importStatement(file, BankType.KASPI))
+                .isInstanceOfSatisfying(StatementApiException.class, exception -> {
+                    assertThat(exception.getStatusCode()).isEqualTo(400);
+                    assertThat(exception.getErrorCode()).isEqualTo(ImportErrorCode.PDF_ENCRYPTED);
                 });
     }
 

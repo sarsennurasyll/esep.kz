@@ -20,7 +20,7 @@ class UploadLimitExceptionHandlerTest {
 
         assertThat(result).isInstanceOfSatisfying(ResponseEntity.class, response -> {
             assertThat(response.getStatusCode()).isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE);
-            assertThat(response.getBody()).isEqualTo(new ApiErrorResponse(UploadLimitExceptionHandler.MESSAGE));
+            assertThat(response.getBody()).isEqualTo(new ApiErrorResponse(UploadLimitExceptionHandler.MESSAGE, "UPLOAD_TOO_LARGE"));
         });
     }
 
