@@ -3,6 +3,7 @@ package com.esep.persistence.jpa.read.adapter;
 import com.esep.moneyflow.interfaces.PurposeLabelingTransactions;
 import com.esep.moneyflow.model.ClassificationSource;
 import com.esep.moneyflow.model.CounterpartyActivity;
+import com.esep.moneyflow.model.LabelableOperation;
 import com.esep.moneyflow.model.MoneyDirection;
 import com.esep.moneyflow.model.MoneyFlowType;
 import com.esep.moneyflow.model.MoneyPurpose;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -49,6 +51,16 @@ public class PurposeLabelingTransactionsJpaAdapter implements PurposeLabelingTra
             return 0;
         }
         return repository.resetRulePurpose(descriptions, flowTypes, direction == MoneyDirection.INFLOW);
+    }
+
+    @Override
+    public Optional<LabelableOperation> findOperation(long operationId) {
+        return repository.findOperation(operationId);
+    }
+
+    @Override
+    public void updateOperationPurpose(long operationId, MoneyPurpose purpose, ClassificationSource source) {
+        repository.updateOperationPurpose(operationId, purpose, source);
     }
 
     private CounterpartyActivity toActivity(CounterpartyActivityProjection row, MoneyDirection direction) {

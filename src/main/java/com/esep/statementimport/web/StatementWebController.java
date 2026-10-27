@@ -1,6 +1,7 @@
 package com.esep.statementimport.web;
 
 import com.esep.entity.BankType;
+import com.esep.moneyflow.model.MoneyDirection;
 import com.esep.statementimport.api.dto.StatementImportResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -11,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.Map;
 
 /**
  * MVC-контроллер страниц импорта и просмотра выписок.
@@ -55,6 +58,10 @@ public class StatementWebController {
     public String statement(@PathVariable Long id, Model model) {
         model.addAttribute("statement", statementWebApiClient.findStatementById(id));
         model.addAttribute("transactions", statementWebApiClient.findTransactionsByStatementId(id));
+        model.addAttribute("purposeOptions", Map.of(
+                MoneyDirection.INFLOW.name(), MoneyDirection.INFLOW.knownPurposes(),
+                MoneyDirection.OUTFLOW.name(), MoneyDirection.OUTFLOW.knownPurposes()
+        ));
         return "statement-details";
     }
 

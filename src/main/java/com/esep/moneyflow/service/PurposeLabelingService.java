@@ -1,5 +1,6 @@
 package com.esep.moneyflow.service;
 
+import com.esep.moneyflow.exception.OperationNotFoundException;
 import com.esep.moneyflow.interfaces.CounterpartyPurposeRuleCatalog;
 import com.esep.moneyflow.interfaces.MoneyPurposeResolver;
 import com.esep.moneyflow.interfaces.PurposeLabelingTransactions;
@@ -7,6 +8,7 @@ import com.esep.moneyflow.model.ClassificationSource;
 import com.esep.moneyflow.model.CounterpartyActivity;
 import com.esep.moneyflow.model.CounterpartyLabelingItem;
 import com.esep.moneyflow.model.CounterpartyPurposeRule;
+import com.esep.moneyflow.model.LabelableOperation;
 import com.esep.moneyflow.model.LabelingProgress;
 import com.esep.moneyflow.model.MoneyDirection;
 import com.esep.moneyflow.model.MoneyFlowType;
@@ -17,11 +19,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Личная разметка назначения операций по контрагенту: правило применяется ко всем операциям с этим
@@ -31,9 +35,9 @@ import java.util.Set;
 public class PurposeLabelingService implements MoneyPurposeResolver {
 
     /** Типы движения, назначение которых по выписке неизвестно и может указать только пользователь. */
-    public static final Set<MoneyFlowType> LABELABLE_FLOWS = Set.of(
-            MoneyFlowType.TRANSFER_TO_PERSON, MoneyFlowType.TRANSFER_FROM_PERSON, MoneyFlowType.UNKNOWN
-    );
+    public static final Set<MoneyFlowType> LABELABLE_FLOWS = Arrays.stream(MoneyFlowType.values())
+            .filter(MoneyFlowType::isPurposeLabelable)
+            .collect(Collectors.toUnmodifiableSet());
     private static final int SHARE_SCALE = 4;
 
     private final CounterpartyPurposeRuleCatalog ruleCatalog;
@@ -94,6 +98,39 @@ public class PurposeLabelingService implements MoneyPurposeResolver {
         CounterpartyPurposeRule rule = ruleCatalog.delete(ruleId)
                 .orElseThrow(() -> new IllegalArgumentException("Rule was not found"));
         transactions.resetRulePurpose(descriptionsOf(rule.counterpartyKey(), rule.direction()), rule.direction(), LABELABLE_FLOWS);
+    }
+
+    /**
+     * Назначение отдельной операции, выбранное пользователем. Оно важнее правила контрагента:
+     * правила не перезаписывают решения с источником USER.
+     */
+    @Transactional
+    public void setOperationPurpose(long operationId, MoneyPurpose purpose) {
+        LabelableOperation operation = labelableOperation(operationId);
+        if (purpose == null || purpose == MoneyPurpose.UNKNOWN) {
+            throw new IllegalArgumentException("Operation purpose must be known; clear it to return to the counterparty rule");
+        }
+        if (!MoneyDirection.of(operation.amount()).allows(purpose)) {
+            throw new IllegalArgumentException("Purpose " + purpose + " is not allowed for this direction");
+        }
+        transactions.updateOperationPurpose(operationId, purpose, ClassificationSource.USER);
+    }
+
+    /** Отменяет ручное решение: операция снова получает назначение по правилу контрагента или «неизвестно». */
+    @Transactional
+    public void clearOperationPurpose(long operationId) {
+        LabelableOperation operation = labelableOperation(operationId);
+        PurposeDecision decision = decide(operation.description(), operation.amount(), operation.flowType());
+        transactions.updateOperationPurpose(operationId, decision.purpose(), decision.source());
+    }
+
+    private LabelableOperation labelableOperation(long operationId) {
+        LabelableOperation operation = transactions.findOperation(operationId)
+                .orElseThrow(() -> new OperationNotFoundException(operationId));
+        if (!operation.flowType().isPurposeLabelable()) {
+            throw new IllegalArgumentException("Purpose of this operation type is determined by bank rules");
+        }
+        return operation;
     }
 
     /** Назначение для новой операции при импорте: по правилу пользователя или «неизвестно». */

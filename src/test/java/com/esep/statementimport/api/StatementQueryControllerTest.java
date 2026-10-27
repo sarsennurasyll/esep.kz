@@ -4,6 +4,9 @@ import com.esep.security.LocalSecurityConfiguration;
 import org.springframework.context.annotation.Import;
 import com.esep.entity.BankType;
 import com.esep.entity.TransactionType;
+import com.esep.moneyflow.model.ClassificationSource;
+import com.esep.moneyflow.model.MoneyFlowType;
+import com.esep.moneyflow.model.MoneyPurpose;
 import com.esep.statementimport.query.interfaces.StatementReadQuery;
 import com.esep.statementimport.query.interfaces.TransactionReadQuery;
 import com.esep.statementimport.query.model.StatementQueryResult;
@@ -81,7 +84,11 @@ class StatementQueryControllerTest {
                         "GROCERY",
                         new BigDecimal("-14500.00"),
                         "KZT",
-                        TransactionType.EXPENSE
+                        TransactionType.EXPENSE,
+                        1L,
+                        MoneyFlowType.PURCHASE,
+                        MoneyPurpose.UNKNOWN,
+                        ClassificationSource.NONE
                 ),
                 new TransactionQueryResult(
                         LocalDate.of(2026, 7, 13),
@@ -90,7 +97,11 @@ class StatementQueryControllerTest {
                         "UNCATEGORIZED",
                         new BigDecimal("-100.00"),
                         "KZT",
-                        TransactionType.EXPENSE
+                        TransactionType.EXPENSE,
+                        2L,
+                        MoneyFlowType.TRANSFER_TO_PERSON,
+                        MoneyPurpose.FAMILY,
+                        ClassificationSource.USER
                 )
         ));
 

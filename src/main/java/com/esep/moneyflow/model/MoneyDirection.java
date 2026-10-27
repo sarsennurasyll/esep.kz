@@ -1,6 +1,8 @@
 package com.esep.moneyflow.model;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 
 /** Направление движения денег относительно счёта владельца выписки. */
 public enum MoneyDirection {
@@ -19,6 +21,13 @@ public enum MoneyDirection {
 
     public static MoneyDirection of(BigDecimal amount) {
         return amount.signum() > 0 ? INFLOW : OUTFLOW;
+    }
+
+    /** Известные назначения, которые пользователь может выбрать для этого направления. */
+    public List<MoneyPurpose> knownPurposes() {
+        return Arrays.stream(MoneyPurpose.values())
+                .filter(purpose -> purpose != MoneyPurpose.UNKNOWN && allows(purpose))
+                .toList();
     }
 
     /** Проверяет, может ли назначение относиться к этому направлению. */

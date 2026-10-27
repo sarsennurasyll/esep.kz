@@ -64,4 +64,26 @@ class PurposeLabelingPostgresIntegrationTest {
                 .containsOnly("UNKNOWN:NONE");
         assertThat(jdbc.queryForObject("select count(*) from counterparty_purpose_rules", Long.class)).isZero();
     }
+
+    @Test
+    void shouldKeepOperationPurposeAboveRuleOnPostgres() {
+        jdbc.update("""
+                insert into statements (bank_name, original_file_name, source_file_hash, uploaded_at, period_from, period_to)
+                values ('KASPI', 'synthetic.pdf', repeat('d', 64), now(), date '2026-08-01', date '2026-08-31')""");
+        jdbc.update("""
+                insert into transactions (amount, currency, transaction_date, source_transaction_fingerprint, description,
+                                          transaction_type, bank_operation_type, flow_type, statement_id)
+                values (30000, 'KZT', date '2026-08-02', repeat('e', 64), 'Тестова А.', 'INCOME', 'TOP_UP', 'TRANSFER_FROM_PERSON',
+                        (select id from statements where source_file_hash = repeat('d', 64)))""");
+        long operationId = jdbc.queryForObject("select id from transactions where source_transaction_fingerprint = repeat('e', 64)", Long.class);
+
+        service.setOperationPurpose(operationId, MoneyPurpose.DEBT);
+        service.setRule("Тестова А.", MoneyDirection.INFLOW, MoneyPurpose.INCOME_WORK);
+        String afterRule = jdbc.queryForObject("select purpose || ':' || purpose_source from transactions where id = ?", String.class, operationId);
+        service.clearOperationPurpose(operationId);
+        String afterClear = jdbc.queryForObject("select purpose || ':' || purpose_source from transactions where id = ?", String.class, operationId);
+
+        assertThat(afterRule).isEqualTo("DEBT:USER");
+        assertThat(afterClear).isEqualTo("INCOME_WORK:PERSONAL_RULE");
+    }
 }

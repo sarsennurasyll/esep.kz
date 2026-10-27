@@ -67,6 +67,36 @@ class PurposeWebControllerTest {
     }
 
     @Test
+    void shouldSetOperationPurposeAndReturnToStatement() throws Exception {
+        mockMvc.perform(post("/purposes/operations/7")
+                        .param("purpose", "DEBT")
+                        .param("statementId", "42")
+                        .with(csrf()))
+                .andExpect(redirectedUrl("/statements/42"));
+
+        verify(purposeLabelingService).setOperationPurpose(7L, MoneyPurpose.DEBT);
+    }
+
+    @Test
+    void shouldClearOperationPurpose() throws Exception {
+        mockMvc.perform(post("/purposes/operations/7/clear").param("statementId", "42").with(csrf()))
+                .andExpect(redirectedUrl("/statements/42"));
+
+        verify(purposeLabelingService).clearOperationPurpose(7L);
+    }
+
+    @Test
+    void shouldRejectNonNumericReturnTarget() throws Exception {
+        mockMvc.perform(post("/purposes/operations/7")
+                        .param("purpose", "DEBT")
+                        .param("statementId", "//attacker.example")
+                        .with(csrf()))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(purposeLabelingService);
+    }
+
+    @Test
     void shouldRejectRuleWithoutCsrfToken() throws Exception {
         mockMvc.perform(post("/purposes/rules")
                         .param("counterpartyKey", "ТЕСТОВ Т.")
