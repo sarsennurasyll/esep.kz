@@ -1,12 +1,15 @@
 package com.esep.moneyflow.interfaces;
 
+import com.esep.moneyflow.model.ClassificationSource;
 import com.esep.moneyflow.model.CounterpartyActivity;
+import com.esep.moneyflow.model.LabelableOperation;
 import com.esep.moneyflow.model.MoneyDirection;
 import com.esep.moneyflow.model.MoneyFlowType;
 import com.esep.moneyflow.model.MoneyPurpose;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /** Операции, назначение которых размечает пользователь. */
 public interface PurposeLabelingTransactions {
@@ -18,4 +21,8 @@ public interface PurposeLabelingTransactions {
 
     /** Возвращает в «неизвестно» только назначения, установленные правилом. */
     long resetRulePurpose(Collection<String> descriptions, MoneyDirection direction, Collection<MoneyFlowType> flowTypes);
+
+    Optional<LabelableOperation> findOperation(long operationId);
+
+    void updateOperationPurpose(long operationId, MoneyPurpose purpose, ClassificationSource source);
 }

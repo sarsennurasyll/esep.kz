@@ -1,5 +1,6 @@
 package com.esep.moneyflow.web;
 
+import com.esep.moneyflow.exception.OperationNotFoundException;
 import com.esep.moneyflow.model.MoneyDirection;
 import com.esep.moneyflow.model.MoneyPurpose;
 import com.esep.moneyflow.service.PurposeLabelingService;
@@ -12,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -67,9 +67,35 @@ public class PurposeWebController {
         return "redirect:/purposes";
     }
 
+    // Возврат только на страницу выписки по числовому идентификатору, чтобы адрес перенаправления нельзя было подменить.
+    @PostMapping("/operations/{id}")
+    public String setOperationPurpose(
+            @PathVariable long id,
+            @RequestParam MoneyPurpose purpose,
+            @RequestParam long statementId,
+            RedirectAttributes attributes
+    ) {
+        try {
+            purposeLabelingService.setOperationPurpose(id, purpose);
+            attributes.addFlashAttribute("successMessage", "Назначение операции сохранено. Правило контрагента для неё больше не действует.");
+        } catch (IllegalArgumentException | OperationNotFoundException exception) {
+            attributes.addFlashAttribute("errorMessage", "Это назначение нельзя выбрать для операции.");
+        }
+        return "redirect:/statements/" + statementId;
+    }
+
+    @PostMapping("/operations/{id}/clear")
+    public String clearOperationPurpose(@PathVariable long id, @RequestParam long statementId, RedirectAttributes attributes) {
+        try {
+            purposeLabelingService.clearOperationPurpose(id);
+            attributes.addFlashAttribute("successMessage", "Ручное назначение отменено: действует правило контрагента или «не знаю».");
+        } catch (IllegalArgumentException | OperationNotFoundException exception) {
+            attributes.addFlashAttribute("errorMessage", "Операция не найдена.");
+        }
+        return "redirect:/statements/" + statementId;
+    }
+
     private List<MoneyPurpose> optionsFor(MoneyDirection direction) {
-        return Arrays.stream(MoneyPurpose.values())
-                .filter(purpose -> purpose != MoneyPurpose.UNKNOWN && direction.allows(purpose))
-                .toList();
+        return direction.knownPurposes();
     }
 }

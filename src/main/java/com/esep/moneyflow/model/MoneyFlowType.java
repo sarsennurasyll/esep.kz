@@ -13,5 +13,10 @@ public enum MoneyFlowType {
     CASH_WITHDRAWAL,
     OWN_ACCOUNT_TRANSFER,
     BANK_FEE,
-    UNKNOWN
+    UNKNOWN;
+
+    /** Назначение операций этого типа выписка не содержит, и его может указать только пользователь. */
+    public boolean isPurposeLabelable() {
+        return this == TRANSFER_TO_PERSON || this == TRANSFER_FROM_PERSON || this == UNKNOWN;
+    }
 }

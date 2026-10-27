@@ -2,6 +2,7 @@ package com.esep.moneyflow.api;
 
 import com.esep.moneyflow.api.dto.CounterpartyLabelingResponse;
 import com.esep.moneyflow.api.dto.LabelingProgressResponse;
+import com.esep.moneyflow.api.dto.OperationPurposeRequest;
 import com.esep.moneyflow.api.dto.PurposeRuleRequest;
 import com.esep.moneyflow.api.dto.PurposeRuleResponse;
 import com.esep.moneyflow.service.PurposeLabelingService;
@@ -57,5 +58,19 @@ public class PurposeLabelingController {
     @Operation(summary = "Удалить правило; операции снова получают назначение «неизвестно»")
     public void removeRule(@PathVariable long id) {
         purposeLabelingService.removeRule(id);
+    }
+
+    @PutMapping("/operations/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Указать назначение отдельной операции; оно важнее правила контрагента")
+    public void setOperationPurpose(@PathVariable long id, @Valid @RequestBody OperationPurposeRequest request) {
+        purposeLabelingService.setOperationPurpose(id, request.purpose());
+    }
+
+    @DeleteMapping("/operations/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Отменить ручное назначение операции и вернуться к правилу контрагента")
+    public void clearOperationPurpose(@PathVariable long id) {
+        purposeLabelingService.clearOperationPurpose(id);
     }
 }

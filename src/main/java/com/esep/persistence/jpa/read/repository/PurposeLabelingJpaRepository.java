@@ -2,6 +2,7 @@ package com.esep.persistence.jpa.read.repository;
 
 import com.esep.entity.Transaction;
 import com.esep.moneyflow.model.ClassificationSource;
+import com.esep.moneyflow.model.LabelableOperation;
 import com.esep.moneyflow.model.MoneyFlowType;
 import com.esep.moneyflow.model.MoneyPurpose;
 import org.springframework.data.jpa.repository.Modifying;
@@ -11,11 +12,32 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Запросы разметки назначения: агрегаты по контрагентам и массовое применение правил.
  */
 public interface PurposeLabelingJpaRepository extends Repository<Transaction, Long> {
+
+    @Query("""
+            select new com.esep.moneyflow.model.LabelableOperation(
+                       transaction.id, transaction.description, transaction.amount, transaction.flowType)
+            from Transaction transaction
+            where transaction.id = :operationId
+            """)
+    Optional<LabelableOperation> findOperation(@Param("operationId") long operationId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            update Transaction transaction
+            set transaction.purpose = :purpose, transaction.purposeSource = :source
+            where transaction.id = :operationId
+            """)
+    int updateOperationPurpose(
+            @Param("operationId") long operationId,
+            @Param("purpose") MoneyPurpose purpose,
+            @Param("source") ClassificationSource source
+    );
 
     @Query("""
             select transaction.description as description, transaction.purpose as purpose,

@@ -14,8 +14,10 @@
         </div>
     </div></div>
     <h1 class="h3 mt-4 mb-3">Операции</h1>
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
     <div class="card statement-card"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
-        <thead><tr><th>Дата</th><th>Описание</th><th>Merchant</th><th>Категория</th><th class="text-end">Сумма</th><th>Валюта</th><th>Тип</th></tr></thead>
+        <thead><tr><th>Дата</th><th>Описание</th><th>Merchant</th><th>Категория</th><th class="text-end">Сумма</th><th>Валюта</th><th>Тип</th><th>Назначение</th></tr></thead>
         <tbody>
         <tr th:each="transaction : ${transactions}">
             <td th:text="${transaction.date}"></td>
@@ -25,8 +27,32 @@
             <td class="text-end fw-semibold" th:classappend="${transaction.amount.signum() < 0 ? ' amount-expense' : ' amount-income'}" th:text="${transaction.amount}"></td>
             <td th:text="${transaction.currency}"></td>
             <td th:text="${transaction.transactionType}"></td>
+            <td th:with="editable=${transaction.flowType != null and transaction.flowType.purposeLabelable}">
+                <span th:unless="${editable}" class="text-secondary small">определено банком</span>
+                <th:block th:if="${editable}">
+                    <form class="d-flex gap-1" th:action="@{/purposes/operations/{id}(id=${transaction.id})}" method="post">
+                        <input type="hidden" name="statementId" th:value="${statement.id}">
+                        <select class="form-select form-select-sm" name="purpose">
+                            <option th:each="purpose : ${purposeOptions.get(transaction.amount.signum() > 0 ? 'INFLOW' : 'OUTFLOW')}"
+                                    th:value="${purpose}" th:text="${purpose.displayName}"
+                                    th:selected="${purpose == transaction.purpose}"></option>
+                        </select>
+                        <button class="btn btn-sm btn-outline-primary" type="submit">OK</button>
+                    </form>
+                    <div class="small text-secondary mt-1">
+                        <span th:if="${transaction.purposeSource != null and transaction.purposeSource.name() == 'USER'}">выбрано вручную</span>
+                        <span th:if="${transaction.purposeSource != null and transaction.purposeSource.name() == 'PERSONAL_RULE'}">по правилу контрагента</span>
+                        <span th:if="${transaction.purposeSource == null or transaction.purposeSource.name() == 'NONE'}">не знаю</span>
+                    </div>
+                    <form th:if="${transaction.purposeSource != null and transaction.purposeSource.name() == 'USER'}"
+                          th:action="@{/purposes/operations/{id}/clear(id=${transaction.id})}" method="post">
+                        <input type="hidden" name="statementId" th:value="${statement.id}">
+                        <button class="btn btn-sm btn-link p-0" type="submit">Отменить ручной выбор</button>
+                    </form>
+                </th:block>
+            </td>
         </tr>
-        <tr th:if="${#lists.isEmpty(transactions)}"><td colspan="7" class="text-center text-secondary py-4">В этой выписке нет операций.</td></tr>
+        <tr th:if="${#lists.isEmpty(transactions)}"><td colspan="8" class="text-center text-secondary py-4">В этой выписке нет операций.</td></tr>
         </tbody>
     </table></div></div>
 </main>

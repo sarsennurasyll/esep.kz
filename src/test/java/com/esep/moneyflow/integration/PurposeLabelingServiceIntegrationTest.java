@@ -4,6 +4,7 @@ import com.esep.entity.BankType;
 import com.esep.entity.Statement;
 import com.esep.entity.Transaction;
 import com.esep.entity.TransactionType;
+import com.esep.moneyflow.exception.OperationNotFoundException;
 import com.esep.moneyflow.model.ClassificationSource;
 import com.esep.moneyflow.model.CounterpartyLabelingItem;
 import com.esep.moneyflow.model.CounterpartyPurposeRule;
@@ -138,6 +139,60 @@ class PurposeLabelingServiceIntegrationTest {
                 .isInstanceOf(IllegalArgumentException.class);
         assertThatThrownBy(() -> service.setRule("Тестов Т.", MoneyDirection.INFLOW, MoneyPurpose.UNKNOWN))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void shouldKeepOperationPurposeAboveCounterpartyRule() {
+        Transaction loanReturn = operation("Тестов Т.", "30000", MoneyFlowType.TRANSFER_FROM_PERSON, "1");
+        operation("Тестов Т.", "50000", MoneyFlowType.TRANSFER_FROM_PERSON, "2");
+        entityManager.flush();
+
+        service.setOperationPurpose(loanReturn.getId(), MoneyPurpose.DEBT);
+        CounterpartyPurposeRule rule = service.setRule("Тестов Т.", MoneyDirection.INFLOW, MoneyPurpose.INCOME_WORK);
+
+        assertThat(purposeOf("1")).isEqualTo(MoneyPurpose.DEBT);
+        assertThat(sourceOf("1")).isEqualTo(ClassificationSource.USER);
+        assertThat(purposeOf("2")).isEqualTo(MoneyPurpose.INCOME_WORK);
+
+        service.removeRule(rule.id());
+
+        assertThat(purposeOf("1")).isEqualTo(MoneyPurpose.DEBT);
+        assertThat(purposeOf("2")).isEqualTo(MoneyPurpose.UNKNOWN);
+    }
+
+    @Test
+    void shouldReturnToCounterpartyRuleWhenOperationPurposeIsCleared() {
+        Transaction withRule = operation("Тестов Т.", "30000", MoneyFlowType.TRANSFER_FROM_PERSON, "1");
+        Transaction withoutRule = operation("Тестова А.", "-7000", MoneyFlowType.TRANSFER_TO_PERSON, "2");
+        entityManager.flush();
+        service.setRule("Тестов Т.", MoneyDirection.INFLOW, MoneyPurpose.INCOME_WORK);
+        service.setOperationPurpose(withRule.getId(), MoneyPurpose.GIFT);
+        service.setOperationPurpose(withoutRule.getId(), MoneyPurpose.FAMILY);
+
+        service.clearOperationPurpose(withRule.getId());
+        service.clearOperationPurpose(withoutRule.getId());
+
+        assertThat(purposeOf("1")).isEqualTo(MoneyPurpose.INCOME_WORK);
+        assertThat(sourceOf("1")).isEqualTo(ClassificationSource.PERSONAL_RULE);
+        assertThat(purposeOf("2")).isEqualTo(MoneyPurpose.UNKNOWN);
+        assertThat(sourceOf("2")).isEqualTo(ClassificationSource.NONE);
+    }
+
+    @Test
+    void shouldRejectInvalidOperationPurpose() {
+        Transaction purchase = operation("TEST STORE", "-1000", MoneyFlowType.PURCHASE, "1");
+        Transaction outgoing = operation("Тестов Т.", "-1000", MoneyFlowType.TRANSFER_TO_PERSON, "2");
+        entityManager.flush();
+
+        assertThatThrownBy(() -> service.setOperationPurpose(purchase.getId(), MoneyPurpose.EXPENSE))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.setOperationPurpose(outgoing.getId(), MoneyPurpose.INCOME_WORK))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.setOperationPurpose(outgoing.getId(), MoneyPurpose.UNKNOWN))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> service.setOperationPurpose(999_999L, MoneyPurpose.FAMILY))
+                .isInstanceOf(OperationNotFoundException.class);
+        assertThat(purposeOf("2")).isEqualTo(MoneyPurpose.UNKNOWN);
     }
 
     private Transaction operation(String description, String amount, MoneyFlowType flowType, String fingerprint) {

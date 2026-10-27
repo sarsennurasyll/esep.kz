@@ -25,7 +25,11 @@ public class TransactionReadJpaMapper {
                 category,
                 transaction.getAmount(),
                 transaction.getCurrency(),
-                transaction.getTransactionType()
+                transaction.getTransactionType(),
+                transaction.getId(),
+                transaction.getFlowType(),
+                transaction.getPurpose(),
+                transaction.getPurposeSource()
         );
     }
 }

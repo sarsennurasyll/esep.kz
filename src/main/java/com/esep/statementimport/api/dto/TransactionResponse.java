@@ -1,6 +1,9 @@
 package com.esep.statementimport.api.dto;
 
 import com.esep.entity.TransactionType;
+import com.esep.moneyflow.model.ClassificationSource;
+import com.esep.moneyflow.model.MoneyFlowType;
+import com.esep.moneyflow.model.MoneyPurpose;
 import com.esep.statementimport.query.model.TransactionQueryResult;
 
 import java.math.BigDecimal;
@@ -16,7 +19,11 @@ public record TransactionResponse(
         String category,
         BigDecimal amount,
         String currency,
-        TransactionType transactionType
+        TransactionType transactionType,
+        Long id,
+        MoneyFlowType flowType,
+        MoneyPurpose purpose,
+        ClassificationSource purposeSource
 ) {
 
     public static TransactionResponse from(TransactionQueryResult result) {
@@ -27,7 +34,11 @@ public record TransactionResponse(
                 result.category(),
                 result.amount(),
                 result.currency(),
-                result.transactionType()
+                result.transactionType(),
+                result.id(),
+                result.flowType(),
+                result.purpose(),
+                result.purposeSource()
         );
     }
 }
