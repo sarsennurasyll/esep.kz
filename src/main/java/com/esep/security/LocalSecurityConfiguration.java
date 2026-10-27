@@ -41,14 +41,14 @@ public class LocalSecurityConfiguration {
         return http.build();
     }
 
-    // Формы Thymeleaf получают CSRF-токен автоматически. Web-слой вызывает /api по HTTP без токена,
-    // поэтому для API проверяется источник запроса: чужой Origin отправляется на обязательную проверку токена и отклоняется.
-    private RequestMatcher csrfRequired(LocalRequestOrigin localRequestOrigin) {
+    // Формы Thymeleaf получают CSRF-токен автоматически. Клиенты API вне браузера токена не имеют, поэтому для API
+    // проверяется источник запроса: чужой Origin отправляется на обязательную проверку токена и отклоняется.
+    static RequestMatcher csrfRequired(LocalRequestOrigin localRequestOrigin) {
         return request -> !SAFE_METHODS.contains(request.getMethod())
                 && (!isApiRequest(request) || !localRequestOrigin.isSameOriginOrNonBrowser(request));
     }
 
-    private boolean isApiRequest(HttpServletRequest request) {
+    private static boolean isApiRequest(HttpServletRequest request) {
         String path = request.getRequestURI().substring(request.getContextPath().length());
         return path.startsWith("/api/");
     }
