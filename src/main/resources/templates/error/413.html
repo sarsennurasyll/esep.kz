@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Файл слишком большой')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navigation}"></nav>
+<main class="container pb-5">
+    <div class="card statement-card my-4"><div class="card-body">
+        <h1 class="h4">Файл слишком большой</h1>
+        <p class="text-secondary mb-3">Размер загружаемой выписки ограничен. Выгрузите выписку Kaspi Gold в PDF за нужный период и попробуйте ещё раз.</p>
+        <a class="btn btn-primary" th:href="@{/import}">Вернуться к импорту</a>
+    </div></div>
+</main>
+</body>
+</html>

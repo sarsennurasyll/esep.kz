@@ -1,6 +1,7 @@
 package com.esep.statementimport.api;
 
 import com.esep.common.api.ApiErrorResponse;
+import com.esep.statementimport.model.ImportErrorCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,10 @@ public class StatementImportExceptionHandler {
         if (status.is5xxServerError()) {
             log.error("Непредвиденная ошибка при обработке запроса к API выписок: {}", exception.getClass().getName());
         }
-        return ResponseEntity.status(status).body(new ApiErrorResponse(StatementApiErrors.clientMessageOf(exception)));
+        ImportErrorCode code = StatementApiErrors.codeOf(exception);
+        return ResponseEntity.status(status).body(new ApiErrorResponse(
+                StatementApiErrors.clientMessageOf(exception),
+                code == null ? null : code.name()
+        ));
     }
 }

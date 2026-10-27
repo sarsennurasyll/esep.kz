@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Import;
 import com.esep.entity.BankType;
 import com.esep.entity.TransactionType;
 import com.esep.moneyflow.model.ClassificationSource;
+import com.esep.statementimport.model.ImportErrorCode;
 import com.esep.moneyflow.model.MoneyFlowType;
 import com.esep.moneyflow.model.MoneyPurpose;
 import com.esep.statementimport.api.dto.StatementImportResponse;
@@ -83,6 +84,38 @@ class StatementWebControllerTest {
     void shouldRejectRequestWithForeignHost() throws Exception {
         mockMvc.perform(get("/statements").header("Host", "rebinding.example"))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shouldExplainOversizedOrSlowStatement() throws Exception {
+        when(statementWebApiClient.importStatement(any(), eq(BankType.KASPI)))
+                .thenThrow(new StatementApiException(413, "Too large", null))
+                .thenThrow(new StatementApiException(422, "Timeout", null));
+
+        mockMvc.perform(multipart("/import")
+                        .file(new MockMultipartFile("file", "big.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes()))
+                        .with(csrf()))
+                .andExpect(flash().attribute("importError", containsString("слишком большой")));
+        mockMvc.perform(multipart("/import")
+                        .file(new MockMultipartFile("file", "slow.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes()))
+                        .with(csrf()))
+                .andExpect(flash().attribute("importError", containsString("слишком много времени")));
+    }
+
+    @Test
+    void shouldExplainReasonByErrorCode() throws Exception {
+        when(statementWebApiClient.importStatement(any(), eq(BankType.KASPI)))
+                .thenThrow(new StatementApiException(400, ImportErrorCode.PDF_ENCRYPTED, "ignored", null))
+                .thenThrow(new StatementApiException(413, ImportErrorCode.PDF_TOO_MANY_PAGES, "ignored", null));
+
+        mockMvc.perform(multipart("/import")
+                        .file(new MockMultipartFile("file", "locked.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes()))
+                        .with(csrf()))
+                .andExpect(flash().attribute("importError", containsString("защищён паролем")));
+        mockMvc.perform(multipart("/import")
+                        .file(new MockMultipartFile("file", "long.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes()))
+                        .with(csrf()))
+                .andExpect(flash().attribute("importError", containsString("слишком много страниц")));
     }
 
     @Test

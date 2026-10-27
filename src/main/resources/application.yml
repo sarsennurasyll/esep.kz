@@ -2,6 +2,9 @@ server:
   # Локальный режим (ADR-0002): сервис доступен только с этого компьютера.
   address: ${SERVER_ADDRESS:127.0.0.1}
   port: ${SERVER_PORT:8080}
+  tomcat:
+    # Дочитывать отклонённое тело запроса до 16 МБ, чтобы браузер получил страницу 413, а не обрыв соединения.
+    max-swallow-size: 16MB
 
 spring:
   application:
@@ -34,6 +37,9 @@ esep:
     allowed-hosts: ${ESEP_ALLOWED_HOSTS:localhost,127.0.0.1}
   import:
     max-pdf-pages: ${ESEP_MAX_PDF_PAGES:200}
+    max-pdf-text-characters: ${ESEP_MAX_PDF_TEXT_CHARACTERS:2000000}
+    max-pdf-parse-duration: ${ESEP_MAX_PDF_PARSE_DURATION:20s}
+    max-pdf-memory: ${ESEP_MAX_PDF_MEMORY:64MB}
 
 springdoc:
   api-docs:

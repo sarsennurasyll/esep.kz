@@ -4,7 +4,10 @@ import com.esep.parser.common.ParserException;
 import com.esep.statementimport.exception.StatementAlreadyImportedException;
 import com.esep.statementimport.exception.StatementFormatException;
 import com.esep.statementimport.exception.StatementWithoutTransactionsException;
+import com.esep.statementimport.model.ImportErrorCode;
 import com.esep.statementimport.pdf.PdfExtractionException;
+import com.esep.statementimport.pdf.PdfLimitExceededException;
+import com.esep.statementimport.pdf.PdfProcessingTimeoutException;
 import org.springframework.http.HttpStatus;
 
 /**
@@ -22,6 +25,12 @@ public final class StatementApiErrors {
         if (exception instanceof StatementAlreadyImportedException) {
             return HttpStatus.CONFLICT;
         }
+        if (exception instanceof PdfLimitExceededException) {
+            return HttpStatus.PAYLOAD_TOO_LARGE;
+        }
+        if (exception instanceof PdfProcessingTimeoutException) {
+            return HttpStatus.UNPROCESSABLE_ENTITY;
+        }
         if (exception instanceof StatementWithoutTransactionsException
                 || exception instanceof StatementFormatException
                 || exception instanceof PdfExtractionException
@@ -30,6 +39,11 @@ public final class StatementApiErrors {
             return HttpStatus.BAD_REQUEST;
         }
         return HttpStatus.INTERNAL_SERVER_ERROR;
+    }
+
+    /** Код причины для ошибок с известной причиной; для остальных — {@code null}. */
+    public static ImportErrorCode codeOf(Throwable exception) {
+        return exception instanceof PdfExtractionException pdfException ? pdfException.code() : null;
     }
 
     // Текст непредвиденного исключения может содержать данные выписки, поэтому наружу отдаётся общее сообщение.
