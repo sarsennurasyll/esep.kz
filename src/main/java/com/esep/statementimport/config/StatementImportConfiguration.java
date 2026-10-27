@@ -18,6 +18,7 @@ import com.esep.statementimport.interfaces.StatementParserRegistry;
 import com.esep.statementimport.kaspi.KaspiMoneyFlowClassifier;
 import com.esep.statementimport.kaspi.KaspiStatementParser;
 import com.esep.statementimport.pdf.PdfBoxTextExtractor;
+import com.esep.statementimport.pdf.PdfProcessingLimits;
 import com.esep.statementimport.pdf.PdfTextExtractor;
 import com.esep.statementimport.service.DefaultStatementImportUseCase;
 import com.esep.statementimport.service.DefaultStatementParserRegistry;
@@ -28,7 +29,9 @@ import com.esep.statementimport.service.TransactionImportProcessor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.unit.DataSize;
 
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -38,8 +41,13 @@ import java.util.List;
 public class StatementImportConfiguration {
 
     @Bean
-    PdfTextExtractor pdfTextExtractor(@Value("${esep.import.max-pdf-pages}") int maxPdfPages) {
-        return new PdfBoxTextExtractor(maxPdfPages);
+    PdfTextExtractor pdfTextExtractor(
+            @Value("${esep.import.max-pdf-pages}") int maxPdfPages,
+            @Value("${esep.import.max-pdf-text-characters}") int maxTextCharacters,
+            @Value("${esep.import.max-pdf-parse-duration}") Duration maxParseDuration,
+            @Value("${esep.import.max-pdf-memory}") DataSize maxMemory
+    ) {
+        return new PdfBoxTextExtractor(new PdfProcessingLimits(maxPdfPages, maxTextCharacters, maxParseDuration, maxMemory.toBytes()));
     }
 
     @Bean

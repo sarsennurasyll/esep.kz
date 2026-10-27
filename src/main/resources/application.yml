@@ -34,6 +34,9 @@ esep:
     allowed-hosts: ${ESEP_ALLOWED_HOSTS:localhost,127.0.0.1}
   import:
     max-pdf-pages: ${ESEP_MAX_PDF_PAGES:200}
+    max-pdf-text-characters: ${ESEP_MAX_PDF_TEXT_CHARACTERS:2000000}
+    max-pdf-parse-duration: ${ESEP_MAX_PDF_PARSE_DURATION:20s}
+    max-pdf-memory: ${ESEP_MAX_PDF_MEMORY:64MB}
 
 springdoc:
   api-docs:
