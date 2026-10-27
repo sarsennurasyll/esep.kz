@@ -9,6 +9,8 @@ import com.esep.statementimport.exception.StatementWithoutTransactionsException;
 import com.esep.statementimport.exception.UnsupportedBankTypeException;
 import com.esep.statementimport.model.StatementImportResult;
 import com.esep.statementimport.pdf.PdfExtractionException;
+import com.esep.statementimport.pdf.PdfLimitExceededException;
+import com.esep.statementimport.pdf.PdfProcessingTimeoutException;
 import com.esep.statementimport.service.DefaultStatementImportUseCase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -120,6 +122,19 @@ class StatementImportControllerTest {
                         .file(pdfFile("statement.pdf", "content"))
                         .param("bankType", "KASPI"))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldReturnPayloadTooLargeAndUnprocessableForPdfLimits() throws Exception {
+        when(statementImportUseCase.importStatement(any(InputStream.class), eq(BankType.KASPI), eq("statement.pdf")))
+                .thenThrow(new PdfLimitExceededException("PDF-документ содержит больше 200 страниц."))
+                .thenThrow(new PdfProcessingTimeoutException("Обработка PDF-документа заняла слишком много времени и была остановлена."));
+
+        mockMvc.perform(multipart("/api/statements/import").file(pdfFile("statement.pdf", "content")).param("bankType", "KASPI"))
+                .andExpect(status().isPayloadTooLarge())
+                .andExpect(jsonPath("$.message").value("PDF-документ содержит больше 200 страниц."));
+        mockMvc.perform(multipart("/api/statements/import").file(pdfFile("statement.pdf", "content")).param("bankType", "KASPI"))
+                .andExpect(status().isUnprocessableEntity());
     }
 
     @Test

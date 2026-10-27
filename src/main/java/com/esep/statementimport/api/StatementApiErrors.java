@@ -5,6 +5,8 @@ import com.esep.statementimport.exception.StatementAlreadyImportedException;
 import com.esep.statementimport.exception.StatementFormatException;
 import com.esep.statementimport.exception.StatementWithoutTransactionsException;
 import com.esep.statementimport.pdf.PdfExtractionException;
+import com.esep.statementimport.pdf.PdfLimitExceededException;
+import com.esep.statementimport.pdf.PdfProcessingTimeoutException;
 import org.springframework.http.HttpStatus;
 
 /**
@@ -21,6 +23,12 @@ public final class StatementApiErrors {
     public static HttpStatus statusOf(Throwable exception) {
         if (exception instanceof StatementAlreadyImportedException) {
             return HttpStatus.CONFLICT;
+        }
+        if (exception instanceof PdfLimitExceededException) {
+            return HttpStatus.PAYLOAD_TOO_LARGE;
+        }
+        if (exception instanceof PdfProcessingTimeoutException) {
+            return HttpStatus.UNPROCESSABLE_ENTITY;
         }
         if (exception instanceof StatementWithoutTransactionsException
                 || exception instanceof StatementFormatException

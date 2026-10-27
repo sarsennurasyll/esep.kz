@@ -86,6 +86,22 @@ class StatementWebControllerTest {
     }
 
     @Test
+    void shouldExplainOversizedOrSlowStatement() throws Exception {
+        when(statementWebApiClient.importStatement(any(), eq(BankType.KASPI)))
+                .thenThrow(new StatementApiException(413, "Too large", null))
+                .thenThrow(new StatementApiException(422, "Timeout", null));
+
+        mockMvc.perform(multipart("/import")
+                        .file(new MockMultipartFile("file", "big.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes()))
+                        .with(csrf()))
+                .andExpect(flash().attribute("importError", containsString("слишком большой")));
+        mockMvc.perform(multipart("/import")
+                        .file(new MockMultipartFile("file", "slow.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes()))
+                        .with(csrf()))
+                .andExpect(flash().attribute("importError", containsString("слишком много времени")));
+    }
+
+    @Test
     void shouldShowImportErrorAfterInvalidPdf() throws Exception {
         when(statementWebApiClient.importStatement(any(), eq(BankType.KASPI)))
                 .thenThrow(new StatementApiException(400, "Invalid PDF", null));
