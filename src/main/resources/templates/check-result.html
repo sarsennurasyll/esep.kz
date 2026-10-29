@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Результат проверки')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navigation}"></nav>
+<main class="container pb-5">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="h3 mb-1">Результат проверки</h1>
+            <p class="text-secondary mb-0">Период: <span th:text="${report.periodFrom} + ' — ' + ${report.periodTo}"></span> · операций: <span th:text="${report.operationCount}">0</span></p>
+        </div>
+        <a class="btn btn-outline-primary" th:href="@{/check}">Проверить другую выписку</a>
+    </div>
+    <div class="alert alert-light border small">Выписка не сохранена. Этот отчёт существует только на этой странице: после её закрытия его нельзя открыть снова.</div>
+
+    <div class="card statement-card mb-4"><div class="card-body">
+        <h2 class="h5">Движение денег</h2>
+        <p class="text-secondary small">Внесение собственных наличных и переводы между своими счетами не считаются ни доходом, ни расходом.
+            Назначение переводов от людей и людям по выписке неизвестно: доход появится, когда вы отметите такие поступления в полном анализе.</p>
+        <div class="table-responsive"><table class="table table-sm mb-0"><tbody>
+            <tr><td>Расходы: покупки за вычетом возвратов и комиссии</td><td class="text-end amount-expense" th:text="${report.moneyFlow.expense}">0</td></tr>
+            <tr><td>Снятие наличных</td><td class="text-end" th:text="${report.moneyFlow.cashWithdrawals}">0</td></tr>
+            <tr><td>Свои деньги: поступило / ушло</td><td class="text-end"><span th:text="${report.moneyFlow.internalInflow}">0</span> / <span th:text="${report.moneyFlow.internalOutflow}">0</span></td></tr>
+            <tr><td>Назначение неизвестно: поступления / списания</td><td class="text-end"><span th:text="${report.moneyFlow.unknownInflow}">0</span> / <span th:text="${report.moneyFlow.unknownOutflow}">0</span></td></tr>
+            <tr class="table-light"><td>Доля сумм с неизвестным назначением: поступления / списания</td><td class="text-end"><span th:text="${#numbers.formatPercent(report.moneyFlow.unknownInflowShare, 1, 1)}">0%</span> / <span th:text="${#numbers.formatPercent(report.moneyFlow.unknownOutflowShare, 1, 1)}">0%</span></td></tr>
+            <tr th:if="${report.purchasesWithMerchant + report.purchasesWithoutMerchant > 0}"><td>Покупок с найденным продавцом</td><td class="text-end"><span th:text="${report.purchasesWithMerchant}">0</span> из <span th:text="${report.purchasesWithMerchant + report.purchasesWithoutMerchant}">0</span></td></tr>
+        </tbody></table></div>
+    </div></div>
+
+    <div class="card statement-card"><div class="card-body">
+        <h2 class="h5">По месяцам</h2>
+        <div class="table-responsive"><table class="table table-sm mb-0">
+            <thead><tr><th>Месяц</th><th class="text-end">Расходы</th><th class="text-end">Наличные</th><th class="text-end">Неизвестно: поступления</th><th class="text-end">Неизвестно: списания</th></tr></thead>
+            <tbody>
+            <tr th:each="item : ${report.monthlyMoneyFlow}">
+                <td><span th:text="${item.month}"></span> <span th:unless="${item.complete}" class="badge text-bg-light border">неполный</span></td>
+                <td class="text-end" th:text="${item.report.expense}"></td>
+                <td class="text-end" th:text="${item.report.cashWithdrawals}"></td>
+                <td class="text-end" th:text="${item.report.unknownInflow}"></td>
+                <td class="text-end" th:text="${item.report.unknownOutflow}"></td>
+            </tr>
+            </tbody>
+        </table></div>
+    </div></div>
+</main>
+</body>
+</html>
