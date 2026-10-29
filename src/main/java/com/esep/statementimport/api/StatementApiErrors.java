@@ -1,6 +1,5 @@
 package com.esep.statementimport.api;
 
-import com.esep.parser.common.ParserException;
 import com.esep.statementimport.exception.StatementAlreadyImportedException;
 import com.esep.statementimport.exception.StatementFormatException;
 import com.esep.statementimport.exception.StatementWithoutTransactionsException;
@@ -34,7 +33,6 @@ public final class StatementApiErrors {
         if (exception instanceof StatementWithoutTransactionsException
                 || exception instanceof StatementFormatException
                 || exception instanceof PdfExtractionException
-                || exception instanceof ParserException
                 || exception instanceof IllegalArgumentException) {
             return HttpStatus.BAD_REQUEST;
         }

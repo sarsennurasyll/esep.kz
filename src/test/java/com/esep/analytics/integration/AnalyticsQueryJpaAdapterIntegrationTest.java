@@ -59,7 +59,7 @@ class AnalyticsQueryJpaAdapterIntegrationTest {
         Category transfers = category("PERSONAL_TRANSFERS", "Переводы людям");
         Merchant magnum = merchant("MAGNUM", grocery, MerchantType.STORE);
         Merchant europharma = merchant("EUROPHARMA", pharmacy, MerchantType.PHARMACY);
-        Merchant erasyl = merchant("ЕРАСЫЛ Е", transfers, MerchantType.PERSON);
+        Merchant person = merchant("ТЕСТОВ Т", transfers, MerchantType.PERSON);
         Statement july = statement("a");
         Statement august = statement("b");
 
@@ -68,12 +68,12 @@ class AnalyticsQueryJpaAdapterIntegrationTest {
         transaction(july, null, LocalDate.of(2026, 7, 4), new BigDecimal("-50.00"), "3");
         transaction(july, magnum, LocalDate.of(2026, 7, 5), new BigDecimal("1000.00"), "4");
         transaction(august, null, LocalDate.of(2026, 8, 1), new BigDecimal("-300.00"), "5");
-        transaction(august, erasyl, LocalDate.of(2026, 8, 2), new BigDecimal("-500.00"), "6");
+        transaction(august, person, LocalDate.of(2026, 8, 2), new BigDecimal("-500.00"), "6", MoneyFlowType.TRANSFER_TO_PERSON);
         entityManager.flush();
         entityManager.clear();
 
         assertThat(analyticsQuery.getSummary()).isEqualTo(new AnalyticsSummary(
-                2, 6, new BigDecimal("1000.00"), new BigDecimal("1150.00"), 4, 2
+                2, 6, new BigDecimal("1000.00"), new BigDecimal("1150.00"), 3, 2
         ));
         assertThat(analyticsQuery.getCategoryExpenses())
                 .extracting(expense -> expense.category() + ":" + expense.amount())
@@ -93,12 +93,12 @@ class AnalyticsQueryJpaAdapterIntegrationTest {
                 );
         assertThat(analyticsQuery.getTopMerchants())
                 .extracting(expense -> expense.merchant() + ":" + expense.amount() + ":" + expense.transactionCount())
-                .containsExactly("ЕРАСЫЛ Е:500.00:1", "EUROPHARMA:200.00:1", "MAGNUM:100.00:1");
+                .containsExactly("ТЕСТОВ Т:500.00:1", "EUROPHARMA:200.00:1", "MAGNUM:100.00:1");
         assertThat(analyticsQuery.getMerchantTypeExpenses())
                 .extracting(expense -> expense.merchantType() + ":" + expense.amount() + ":" + expense.transactionCount())
                 .containsExactly("PERSON:500.00:1", "PHARMACY:200.00:1", "STORE:100.00:1");
         assertThat(analyticsQuery.getTopPersonTransfers())
-                .containsExactly(new com.esep.analytics.model.PersonTransfer("ЕРАСЫЛ Е", new BigDecimal("500.00"), 1));
+                .containsExactly(new com.esep.analytics.model.PersonTransfer("ТЕСТОВ Т", new BigDecimal("500.00"), 1));
         assertThat(analyticsQuery.getMonthlyAnalytics())
                 .extracting(month -> month.month() + ":" + month.income() + ":" + month.expense())
                 .containsExactly("2026-07:1000.00:350.00", "2026-08:0:800.00");
@@ -206,9 +206,21 @@ class AnalyticsQueryJpaAdapterIntegrationTest {
             BigDecimal amount,
             String fingerprintCharacter
     ) {
+        transaction(statement, merchant, date, amount, fingerprintCharacter, MoneyFlowType.PURCHASE);
+    }
+
+    private void transaction(
+            Statement statement,
+            Merchant merchant,
+            LocalDate date,
+            BigDecimal amount,
+            String fingerprintCharacter,
+            MoneyFlowType flowType
+    ) {
         entityManager.persist(Transaction.builder()
                 .statement(statement)
                 .merchant(merchant)
+                .flowType(flowType)
                 .transactionDate(date)
                 .amount(amount)
                 .currency("KZT")

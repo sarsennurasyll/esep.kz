@@ -49,8 +49,8 @@ public class AnalyticsQueryJpaAdapter implements AnalyticsQuery {
                 summary.getTotalTransactions(),
                 zeroIfNull(summary.getTotalIncome()),
                 zeroIfNull(summary.getTotalExpense()),
-                summary.getRecognizedTransactions(),
-                summary.getUnknownTransactions()
+                summary.getPurchasesWithMerchant(),
+                summary.getPurchasesWithoutMerchant()
         );
     }
 

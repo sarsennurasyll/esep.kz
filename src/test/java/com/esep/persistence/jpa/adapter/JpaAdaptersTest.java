@@ -19,7 +19,9 @@ import com.esep.persistence.jpa.repository.StatementJpaRepository;
 import com.esep.persistence.jpa.repository.TransactionJpaRepository;
 import com.esep.persistence.model.StatementPersistenceCommand;
 import com.esep.persistence.model.TransactionPersistenceCommand;
+import com.esep.statementimport.exception.StatementAlreadyImportedException;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -27,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -48,6 +51,26 @@ class JpaAdaptersTest {
         verify(repository).save(any(Statement.class));
         when(repository.existsBySourceFileHash(command.sourceFileHash())).thenReturn(true);
         assertThat(adapter.existsBySourceFileHash(command.sourceFileHash())).isTrue();
+    }
+
+    @Test
+    void shouldReportConcurrentImportOfSameFileAsAlreadyImported() {
+        StatementJpaRepository repository = mock(StatementJpaRepository.class);
+        StatementCatalogJpaAdapter adapter = new StatementCatalogJpaAdapter(repository, new StatementJpaMapper());
+        when(repository.save(any(Statement.class))).thenThrow(new DataIntegrityViolationException("could not execute statement",
+                new IllegalStateException("duplicate key value violates unique constraint \"uk_statements_source_file_hash\"")));
+
+        assertThatThrownBy(() -> adapter.save(statementCommand())).isInstanceOf(StatementAlreadyImportedException.class);
+    }
+
+    @Test
+    void shouldRethrowOtherIntegrityViolations() {
+        StatementJpaRepository repository = mock(StatementJpaRepository.class);
+        StatementCatalogJpaAdapter adapter = new StatementCatalogJpaAdapter(repository, new StatementJpaMapper());
+        when(repository.save(any(Statement.class))).thenThrow(new DataIntegrityViolationException("could not execute statement",
+                new IllegalStateException("null value in column \"bank_name\"")));
+
+        assertThatThrownBy(() -> adapter.save(statementCommand())).isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
