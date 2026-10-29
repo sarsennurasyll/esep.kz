@@ -10,6 +10,7 @@ import com.esep.analytics.model.MonthlyAnalytics;
 import com.esep.analytics.model.PersonTransfer;
 import com.esep.entity.MerchantType;
 import com.esep.moneyflow.model.MoneyFlowTotal;
+import com.esep.moneyflow.model.MonthlyMoneyFlowTotal;
 import com.esep.persistence.jpa.read.repository.AnalyticsStatementReadJpaRepository;
 import com.esep.persistence.jpa.read.repository.AnalyticsTransactionReadJpaRepository;
 import org.springframework.data.domain.PageRequest;
@@ -136,6 +137,22 @@ public class AnalyticsQueryJpaAdapter implements AnalyticsQuery {
                         zeroIfNull(result.getInflow()),
                         zeroIfNull(result.getOutflow()),
                         result.getOperationCount()
+                ))
+                .toList();
+    }
+
+    @Override
+    public List<MonthlyMoneyFlowTotal> getMonthlyMoneyFlowTotals() {
+        return transactionReadJpaRepository.findMonthlyMoneyFlowTotals().stream()
+                .map(result -> new MonthlyMoneyFlowTotal(
+                        YearMonth.of(result.getYear(), result.getMonth()),
+                        new MoneyFlowTotal(
+                                result.getFlowType(),
+                                result.getPurpose(),
+                                zeroIfNull(result.getInflow()),
+                                zeroIfNull(result.getOutflow()),
+                                result.getOperationCount()
+                        )
                 ))
                 .toList();
     }

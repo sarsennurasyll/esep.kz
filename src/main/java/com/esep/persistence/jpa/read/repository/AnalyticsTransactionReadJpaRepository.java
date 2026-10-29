@@ -111,4 +111,18 @@ public interface AnalyticsTransactionReadJpaRepository extends Repository<Transa
             group by transaction.flowType, transaction.purpose
             """)
     List<MoneyFlowTotalProjection> findMoneyFlowTotals();
+
+    @Query("""
+            select year(transaction.transactionDate) as year,
+                   month(transaction.transactionDate) as month,
+                   transaction.flowType as flowType,
+                   transaction.purpose as purpose,
+                   coalesce(sum(case when transaction.amount > 0 then transaction.amount else 0 end), 0) as inflow,
+                   coalesce(sum(case when transaction.amount < 0 then -transaction.amount else 0 end), 0) as outflow,
+                   count(transaction) as operationCount
+            from Transaction transaction
+            group by year(transaction.transactionDate), month(transaction.transactionDate), transaction.flowType, transaction.purpose
+            order by year(transaction.transactionDate), month(transaction.transactionDate)
+            """)
+    List<MonthlyMoneyFlowTotalProjection> findMonthlyMoneyFlowTotals();
 }

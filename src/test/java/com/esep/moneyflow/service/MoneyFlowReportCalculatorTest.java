@@ -4,9 +4,12 @@ import com.esep.moneyflow.model.MoneyFlowReport;
 import com.esep.moneyflow.model.MoneyFlowTotal;
 import com.esep.moneyflow.model.MoneyFlowType;
 import com.esep.moneyflow.model.MoneyPurpose;
+import com.esep.moneyflow.model.MonthlyMoneyFlowReport;
+import com.esep.moneyflow.model.MonthlyMoneyFlowTotal;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
+import java.time.YearMonth;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -88,6 +91,29 @@ class MoneyFlowReportCalculatorTest {
 
         assertThat(report.unknownInflowShare()).isEqualByComparingTo("0");
         assertThat(report.unknownOutflowShare()).isEqualByComparingTo("0");
+    }
+
+    @Test
+    void shouldCalculateEachMonthSeparatelyInChronologicalOrder() {
+        List<MonthlyMoneyFlowReport> reports = calculator.calculateMonthly(List.of(
+                new MonthlyMoneyFlowTotal(YearMonth.of(2026, 9), total(MoneyFlowType.PURCHASE, MoneyPurpose.UNKNOWN, "0", "500")),
+                new MonthlyMoneyFlowTotal(YearMonth.of(2026, 8), total(MoneyFlowType.CASH_DEPOSIT, MoneyPurpose.UNKNOWN, "10000", "0")),
+                new MonthlyMoneyFlowTotal(YearMonth.of(2026, 8), total(MoneyFlowType.TRANSFER_FROM_PERSON, MoneyPurpose.INCOME_WORK, "4000", "0")),
+                new MonthlyMoneyFlowTotal(YearMonth.of(2026, 8), total(MoneyFlowType.TRANSFER_TO_PERSON, MoneyPurpose.UNKNOWN, "0", "3000"))
+        ));
+
+        assertThat(reports).extracting(MonthlyMoneyFlowReport::month).containsExactly(YearMonth.of(2026, 8), YearMonth.of(2026, 9));
+        MoneyFlowReport august = reports.getFirst().report();
+        assertThat(august.income()).isEqualByComparingTo("4000");
+        assertThat(august.internalInflow()).isEqualByComparingTo("10000");
+        assertThat(august.unknownOutflow()).isEqualByComparingTo("3000");
+        assertThat(august.unknownOutflowShare()).isEqualByComparingTo("1");
+        assertThat(reports.get(1).report().expense()).isEqualByComparingTo("500");
+    }
+
+    @Test
+    void shouldReturnNoMonthsForEmptyData() {
+        assertThat(calculator.calculateMonthly(List.of())).isEmpty();
     }
 
     private MoneyFlowTotal total(MoneyFlowType flowType, MoneyPurpose purpose, String inflow, String outflow) {
