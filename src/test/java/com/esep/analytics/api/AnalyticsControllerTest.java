@@ -50,8 +50,8 @@ class AnalyticsControllerTest {
                 .andExpect(jsonPath("$.totalTransactions").value(5))
                 .andExpect(jsonPath("$.totalIncome").value(1000.00))
                 .andExpect(jsonPath("$.totalExpense").value(450.00))
-                .andExpect(jsonPath("$.recognizedTransactions").value(4))
-                .andExpect(jsonPath("$.unknownTransactions").value(1));
+                .andExpect(jsonPath("$.purchasesWithMerchant").value(4))
+                .andExpect(jsonPath("$.purchasesWithoutMerchant").value(1));
     }
 
     @Test
@@ -101,7 +101,7 @@ class AnalyticsControllerTest {
                 new MerchantTypeExpense(MerchantType.PERSON, new BigDecimal("500.00"), 2)
         ));
         when(analyticsService.getTopPersonTransfers()).thenReturn(List.of(
-                new PersonTransfer("ЕРАСЫЛ Е", new BigDecimal("500.00"), 2)
+                new PersonTransfer("ТЕСТОВ Т", new BigDecimal("500.00"), 2)
         ));
         when(analyticsService.getCategoryOperationCounts()).thenReturn(List.of(
                 new CategoryOperationCount("PERSONAL_TRANSFERS", "Переводы людям", 2)
@@ -113,7 +113,7 @@ class AnalyticsControllerTest {
                 .andExpect(jsonPath("$[0].merchantTypeName").value("Перевод человеку"));
         mockMvc.perform(get("/api/analytics/people"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].recipient").value("ЕРАСЫЛ Е"));
+                .andExpect(jsonPath("$[0].recipient").value("ТЕСТОВ Т"));
         mockMvc.perform(get("/api/analytics/category-counts"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].categoryName").value("Переводы людям"))

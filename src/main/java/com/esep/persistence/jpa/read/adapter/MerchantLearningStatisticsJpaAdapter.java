@@ -23,6 +23,6 @@ public class MerchantLearningStatisticsJpaAdapter implements MerchantLearningSta
             return new MerchantLearningStatistics(0, 0, 0, 0, 0);
         }
         return new MerchantLearningStatistics(statistics.getMerchantCount(), statistics.getAliasCount(),
-                unknownDescriptions.findAll().size(), statistics.getRecognizedTransactionCount(), statistics.getUnknownTransactionCount());
+                unknownDescriptions.findAll().size(), statistics.getPurchasesWithMerchantCount(), statistics.getPurchasesWithoutMerchantCount());
     }
 }

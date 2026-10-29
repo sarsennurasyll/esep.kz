@@ -12,8 +12,8 @@ public record AnalyticsSummaryResponse(
         long totalTransactions,
         BigDecimal totalIncome,
         BigDecimal totalExpense,
-        long recognizedTransactions,
-        long unknownTransactions
+        long purchasesWithMerchant,
+        long purchasesWithoutMerchant
 ) {
 
     public static AnalyticsSummaryResponse from(AnalyticsSummary summary) {
@@ -22,8 +22,8 @@ public record AnalyticsSummaryResponse(
                 summary.totalTransactions(),
                 summary.totalIncome(),
                 summary.totalExpense(),
-                summary.recognizedTransactions(),
-                summary.unknownTransactions()
+                summary.purchasesWithMerchant(),
+                summary.purchasesWithoutMerchant()
         );
     }
 }

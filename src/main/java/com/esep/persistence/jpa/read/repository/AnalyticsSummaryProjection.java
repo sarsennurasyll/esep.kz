@@ -13,7 +13,7 @@ public interface AnalyticsSummaryProjection {
 
     BigDecimal getTotalExpense();
 
-    long getRecognizedTransactions();
+    long getPurchasesWithMerchant();
 
-    long getUnknownTransactions();
+    long getPurchasesWithoutMerchant();
 }

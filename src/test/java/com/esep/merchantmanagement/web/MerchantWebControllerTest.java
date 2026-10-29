@@ -13,6 +13,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.mockito.Mockito.doNothing;
@@ -48,7 +51,9 @@ class MerchantWebControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("merchants"))
                 .andExpect(model().attributeExists("unknownDescriptions"))
-                .andExpect(model().attributeExists("merchants"));
+                .andExpect(model().attributeExists("merchants"))
+                .andExpect(content().string(containsString("Покрытие покупок")))
+                .andExpect(content().string(not(containsString("Качество распознавания"))));
     }
 
     @Test

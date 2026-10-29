@@ -14,8 +14,8 @@
         <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Операции</span><div class="h3 mb-0" th:text="${summary.totalTransactions}">0</div></div></div></div>
         <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Все поступления</span><div class="h3 mb-0 amount-income" th:text="${summary.totalIncome}">0</div></div></div></div>
         <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Все списания</span><div class="h3 mb-0 amount-expense" th:text="${summary.totalExpense}">0</div></div></div></div>
-        <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Распознано</span><div class="h3 mb-0" th:text="${summary.recognizedTransactions}">0</div></div></div></div>
-        <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Не распознано</span><div class="h3 mb-0" th:text="${summary.unknownTransactions}">0</div></div></div></div>
+        <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Покупки с найденным продавцом</span><div class="h3 mb-0" th:text="${summary.purchasesWithMerchant}">0</div></div></div></div>
+        <div class="col-sm-6 col-lg-4"><div class="card statement-card h-100"><div class="card-body"><span class="text-secondary small">Покупки без продавца</span><div class="h3 mb-0" th:text="${summary.purchasesWithoutMerchant}">0</div></div></div></div>
     </div>
 
     <div class="card statement-card mb-4" id="money-flow"><div class="card-body">

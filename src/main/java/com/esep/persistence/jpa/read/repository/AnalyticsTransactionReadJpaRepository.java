@@ -18,8 +18,10 @@ public interface AnalyticsTransactionReadJpaRepository extends Repository<Transa
             select count(transaction) as totalTransactions,
                    coalesce(sum(case when transaction.amount > 0 then transaction.amount else 0 end), 0) as totalIncome,
                    coalesce(sum(case when transaction.amount < 0 then -transaction.amount else 0 end), 0) as totalExpense,
-                   coalesce(sum(case when transaction.merchant is not null then 1 else 0 end), 0) as recognizedTransactions,
-                   coalesce(sum(case when transaction.merchant is null then 1 else 0 end), 0) as unknownTransactions
+                   coalesce(sum(case when transaction.flowType in (com.esep.moneyflow.model.MoneyFlowType.PURCHASE, com.esep.moneyflow.model.MoneyFlowType.PURCHASE_REFUND)
+                                 and transaction.merchant is not null then 1 else 0 end), 0) as purchasesWithMerchant,
+                   coalesce(sum(case when transaction.flowType in (com.esep.moneyflow.model.MoneyFlowType.PURCHASE, com.esep.moneyflow.model.MoneyFlowType.PURCHASE_REFUND)
+                                 and transaction.merchant is null then 1 else 0 end), 0) as purchasesWithoutMerchant
             from Transaction transaction
             """)
     AnalyticsSummaryProjection getSummary();
