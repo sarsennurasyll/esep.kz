@@ -40,20 +40,20 @@ public interface PurposeLabelingJpaRepository extends Repository<Transaction, Lo
     );
 
     @Query("""
-            select transaction.description as description, transaction.purpose as purpose,
+            select transaction.description as description, transaction.purpose as purpose, transaction.purposeSource as purposeSource,
                    coalesce(sum(transaction.amount), 0) as amount, count(transaction) as operationCount
             from Transaction transaction
             where transaction.amount > 0 and transaction.flowType in :flowTypes
-            group by transaction.description, transaction.purpose
+            group by transaction.description, transaction.purpose, transaction.purposeSource
             """)
     List<CounterpartyActivityProjection> findInflowActivity(@Param("flowTypes") Collection<MoneyFlowType> flowTypes);
 
     @Query("""
-            select transaction.description as description, transaction.purpose as purpose,
+            select transaction.description as description, transaction.purpose as purpose, transaction.purposeSource as purposeSource,
                    coalesce(sum(-transaction.amount), 0) as amount, count(transaction) as operationCount
             from Transaction transaction
             where transaction.amount < 0 and transaction.flowType in :flowTypes
-            group by transaction.description, transaction.purpose
+            group by transaction.description, transaction.purpose, transaction.purposeSource
             """)
     List<CounterpartyActivityProjection> findOutflowActivity(@Param("flowTypes") Collection<MoneyFlowType> flowTypes);
 

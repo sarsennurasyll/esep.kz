@@ -68,6 +68,7 @@ public class PurposeLabelingTransactionsJpaAdapter implements PurposeLabelingTra
                 row.getDescription(),
                 direction,
                 row.getPurpose(),
+                row.getPurposeSource(),
                 row.getAmount() == null ? BigDecimal.ZERO : row.getAmount(),
                 row.getOperationCount()
         );

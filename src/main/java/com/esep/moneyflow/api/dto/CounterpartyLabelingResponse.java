@@ -13,11 +13,13 @@ public record CounterpartyLabelingResponse(
         BigDecimal amount,
         long operationCount,
         BigDecimal labeledAmount,
+        long manualOperationCount,
         PurposeRuleResponse rule
 ) {
 
     public static CounterpartyLabelingResponse from(CounterpartyLabelingItem item) {
         return new CounterpartyLabelingResponse(item.counterpartyKey(), item.exampleDescription(), item.direction(),
-                item.amount(), item.operationCount(), item.labeledAmount(), PurposeRuleResponse.from(item.rule()));
+                item.amount(), item.operationCount(), item.labeledAmount(), item.manualOperationCount(),
+                PurposeRuleResponse.from(item.rule()));
     }
 }

@@ -10,6 +10,7 @@ public record CounterpartyActivity(
         String description,
         MoneyDirection direction,
         MoneyPurpose purpose,
+        ClassificationSource purposeSource,
         BigDecimal amount,
         long operationCount
 ) {

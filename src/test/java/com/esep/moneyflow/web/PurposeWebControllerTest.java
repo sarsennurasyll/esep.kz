@@ -41,7 +41,7 @@ class PurposeWebControllerTest {
     @Test
     void shouldRenderCounterpartiesWithPurposesAllowedForDirection() throws Exception {
         when(purposeLabelingService.findCounterparties()).thenReturn(List.of(new CounterpartyLabelingItem(
-                "ТЕСТОВ Т.", "Тестов Т.", MoneyDirection.OUTFLOW, new BigDecimal("5000"), 2, BigDecimal.ZERO, null
+                "ТЕСТОВ Т.", "Тестов Т.", MoneyDirection.OUTFLOW, new BigDecimal("5000"), 2, BigDecimal.ZERO, 1, null
         )));
         when(purposeLabelingService.progress()).thenReturn(new LabelingProgress(
                 new BigDecimal("5000"), BigDecimal.ZERO, new BigDecimal("0.0000"), 1, 0
@@ -50,6 +50,7 @@ class PurposeWebControllerTest {
         mockMvc.perform(get("/purposes"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Тестов Т.")))
+                .andExpect(content().string(containsString("вручную: <span>1</span>")))
                 .andExpect(content().string(containsString("value=\"FAMILY\"")))
                 .andExpect(content().string(not(containsString("value=\"INCOME_WORK\""))));
     }

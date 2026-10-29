@@ -5,7 +5,8 @@ import java.math.BigDecimal;
 /**
  * Контрагент, назначение операций с которым может указать пользователь.
  *
- * @param labeledAmount сумма операций, у которых назначение уже известно (по правилу или вручную)
+ * @param labeledAmount         сумма операций, у которых назначение уже известно (по правилу или вручную)
+ * @param manualOperationCount  число операций, назначение которых выбрано вручную и важнее правила контрагента
  * @param rule          правило пользователя или {@code null}
  */
 public record CounterpartyLabelingItem(
@@ -15,6 +16,7 @@ public record CounterpartyLabelingItem(
         BigDecimal amount,
         long operationCount,
         BigDecimal labeledAmount,
+        long manualOperationCount,
         CounterpartyPurposeRule rule
 ) {
 }

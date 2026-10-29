@@ -161,6 +161,21 @@ class PurposeLabelingServiceIntegrationTest {
     }
 
     @Test
+    void shouldCountManualExceptionsPerCounterparty() {
+        Transaction manual = operation("Тестов Т.", "30000", MoneyFlowType.TRANSFER_FROM_PERSON, "1");
+        operation("Тестов Т.", "50000", MoneyFlowType.TRANSFER_FROM_PERSON, "2");
+        entityManager.flush();
+        service.setRule("Тестов Т.", MoneyDirection.INFLOW, MoneyPurpose.INCOME_WORK);
+        service.setOperationPurpose(manual.getId(), MoneyPurpose.DEBT);
+
+        CounterpartyLabelingItem item = service.findCounterparties().getFirst();
+
+        assertThat(item.operationCount()).isEqualTo(2);
+        assertThat(item.manualOperationCount()).isEqualTo(1);
+        assertThat(item.labeledAmount()).isEqualByComparingTo("80000");
+    }
+
+    @Test
     void shouldReturnToCounterpartyRuleWhenOperationPurposeIsCleared() {
         Transaction withRule = operation("Тестов Т.", "30000", MoneyFlowType.TRANSFER_FROM_PERSON, "1");
         Transaction withoutRule = operation("Тестова А.", "-7000", MoneyFlowType.TRANSFER_TO_PERSON, "2");

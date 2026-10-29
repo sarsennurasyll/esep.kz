@@ -160,6 +160,7 @@ public class PurposeLabelingService implements MoneyPurposeResolver {
         private BigDecimal amount = BigDecimal.ZERO;
         private BigDecimal labeledAmount = BigDecimal.ZERO;
         private long operationCount;
+        private long manualOperationCount;
 
         Accumulator(String exampleDescription) {
             this.exampleDescription = exampleDescription;
@@ -168,13 +169,17 @@ public class PurposeLabelingService implements MoneyPurposeResolver {
         void add(CounterpartyActivity activity) {
             amount = amount.add(activity.amount());
             operationCount += activity.operationCount();
+            if (activity.purposeSource() == ClassificationSource.USER) {
+                manualOperationCount += activity.operationCount();
+            }
             if (activity.purpose() != MoneyPurpose.UNKNOWN) {
                 labeledAmount = labeledAmount.add(activity.amount());
             }
         }
 
         CounterpartyLabelingItem toItem(RuleKey key, CounterpartyPurposeRule rule) {
-            return new CounterpartyLabelingItem(key.counterpartyKey(), exampleDescription, key.direction(), amount, operationCount, labeledAmount, rule);
+            return new CounterpartyLabelingItem(key.counterpartyKey(), exampleDescription, key.direction(), amount, operationCount,
+                    labeledAmount, manualOperationCount, rule);
         }
     }
 }
