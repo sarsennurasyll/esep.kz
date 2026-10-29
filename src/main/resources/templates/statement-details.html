@@ -13,6 +13,17 @@
             <div class="col-md-3"><span class="text-secondary d-block small">Импортирована</span><strong th:text="${#temporals.format(statement.importedAt, 'dd.MM.yyyy HH:mm')}"></strong></div>
         </div>
     </div></div>
+    <div th:if="${importReport != null}" class="alert alert-info">
+        <strong>Выписка импортирована.</strong>
+        Добавлено операций: <span th:text="${importReport.operationsTotal}">0</span>.
+        <th:block th:if="${importReport.skippedDuplicateOperations > 0}">
+            Пропущено как уже загруженные из прежних выписок этой карты: <span th:text="${importReport.skippedDuplicateOperations}">0</span>.
+        </th:block>
+        <th:block th:if="${importReport.recognizedOperations + importReport.unknownOperations > 0}">
+            Покупок с найденным продавцом: <span th:text="${importReport.recognizedOperations}">0</span>
+            из <span th:text="${importReport.recognizedOperations + importReport.unknownOperations}">0</span>.
+        </th:block>
+    </div>
     <h1 class="h3 mt-4 mb-3">Операции</h1>
     <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
     <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>

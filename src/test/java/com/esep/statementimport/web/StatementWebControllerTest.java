@@ -76,7 +76,26 @@ class StatementWebControllerTest {
                         .param("bankType", "KASPI")
                         .with(csrf()))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(view().name("redirect:/statements/42"));
+                .andExpect(view().name("redirect:/statements/42"))
+                .andExpect(flash().attributeExists("importReport"));
+    }
+
+    @Test
+    void shouldShowImportReportOnceAfterUpload() throws Exception {
+        when(statementWebApiClient.findStatementById(42L)).thenReturn(statement());
+        when(statementWebApiClient.findTransactionsByStatementId(42L)).thenReturn(List.of());
+        when(statementDeletionService.plan(42L)).thenReturn(new StatementDeletionPlan(42L, List.of(42L), 0));
+        StatementImportResponse report = new StatementImportResponse(42L, 12, 3, 1, 8, 5,
+                LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31));
+
+        mockMvc.perform(get("/statements/42").flashAttr("importReport", report))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Добавлено операций: <span>12</span>")))
+                .andExpect(content().string(containsString("уже загруженные из прежних выписок этой карты: <span>5</span>")))
+                .andExpect(content().string(containsString("Покупок с найденным продавцом: <span>3</span>")));
+
+        mockMvc.perform(get("/statements/42"))
+                .andExpect(content().string(not(containsString("Выписка импортирована"))));
     }
 
     @Test
