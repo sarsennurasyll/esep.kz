@@ -5,5 +5,5 @@ import java.time.LocalDate;
 /**
  * Вычисленный период операций банковской выписки.
  */
-record StatementPeriod(LocalDate periodFrom, LocalDate periodTo) {
+public record StatementPeriod(LocalDate periodFrom, LocalDate periodTo) {
 }

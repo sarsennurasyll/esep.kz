@@ -11,12 +11,12 @@ import java.util.List;
  * Определяет, покрыт ли календарный месяц периодами импортированных выписок полностью.
  * Несколько выписок вместе могут покрыть месяц, даже если ни одна не покрывает его целиком.
  */
-final class MonthCoverage {
+public final class MonthCoverage {
 
     private MonthCoverage() {
     }
 
-    static boolean isComplete(YearMonth month, List<StatementCoverage> coverages) {
+    public static boolean isComplete(YearMonth month, List<StatementCoverage> coverages) {
         LocalDate cursor = month.atDay(1);
         LocalDate end = month.atEndOfMonth();
         List<StatementCoverage> sorted = coverages.stream()

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Проверка выписки')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navigation}"></nav>
+<main class="container pb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card import-card">
+                <div class="card-body p-4 p-md-5">
+                    <h1 class="h3 mb-2">Проверка выписки без регистрации</h1>
+                    <p class="text-secondary">Загрузите PDF-выписку Kaspi Gold и сразу получите отчёт: доход, расходы, наличные и переводы, назначение которых по выписке неизвестно.
+                        Выписка обрабатывается только во время проверки и не сохраняется.</p>
+                    <div th:if="${checkError}" class="alert alert-danger" th:text="${checkError}"></div>
+                    <form th:action="@{/check}" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="bankType" value="KASPI">
+                        <div class="mb-3">
+                            <label for="file" class="form-label">PDF-выписка Kaspi Gold</label>
+                            <input id="file" name="file" class="form-control" type="file" accept="application/pdf,.pdf" required>
+                        </div>
+                        <div class="form-check mb-4">
+                            <input class="form-check-input" type="checkbox" id="consent" name="consent" value="true" required>
+                            <label class="form-check-label" for="consent">
+                                Я согласен на обработку выписки для этой проверки. Выписка и операции не сохраняются
+                                (<a th:href="@{/privacy}">политика конфиденциальности</a>).
+                            </label>
+                        </div>
+                        <button class="btn btn-primary" type="submit">Проверить</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+</body>
+</html>
