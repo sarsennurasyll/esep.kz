@@ -51,15 +51,15 @@
     </div></div>
 
     <div class="row g-4">
-        <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Расходы по категориям</h2><canvas id="categoriesChart"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Покупки по категориям</h2><p class="text-secondary small">За вычетом возвратов; переводы и наличные не входят.</p><canvas id="categoriesChart"></canvas></div></div></div>
         <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Движение денег по месяцам</h2><canvas id="monthlyChart"></canvas></div></div></div>
         <div class="col-12"><div class="card statement-card"><div class="card-body"><h2 class="h5">Топ мест расходов</h2><canvas id="merchantsChart"></canvas></div></div></div>
         <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Расходы по типам получателей</h2><canvas id="merchantTypesChart"></canvas></div></div></div>
         <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Топ переводов людям</h2><canvas id="peopleChart"></canvas></div></div></div>
-        <div class="col-12"><div class="card statement-card"><div class="card-body"><h2 class="h5">Количество операций по категориям</h2>
+        <div class="col-12"><div class="card statement-card"><div class="card-body"><h2 class="h5">Количество покупок по категориям</h2>
             <div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Категория</th><th class="text-end">Операций</th></tr></thead><tbody>
                 <tr th:each="count : ${categoryCounts}"><td th:text="${count.categoryName}"></td><td class="text-end" th:text="${count.transactionCount}"></td></tr>
-                <tr th:if="${#lists.isEmpty(categoryCounts)}"><td colspan="2" class="text-secondary">Пока нет расходных операций.</td></tr>
+                <tr th:if="${#lists.isEmpty(categoryCounts)}"><td colspan="2" class="text-secondary">Пока нет покупок.</td></tr>
             </tbody></table></div>
         </div></div></div>
     </div>

@@ -7,6 +7,7 @@ import com.esep.moneyflow.service.MoneyFlowReportCalculator;
 import com.esep.moneyflow.model.MoneyFlowTotal;
 import com.esep.moneyflow.model.MoneyFlowType;
 import com.esep.moneyflow.model.MoneyPurpose;
+import com.esep.onetimecheck.model.CategorySpending;
 import com.esep.onetimecheck.model.OneTimeCheckReport;
 import com.esep.onetimecheck.service.OneTimeCheckService;
 import com.esep.security.LocalSecurityConfiguration;
@@ -69,6 +70,7 @@ class OneTimeCheckWebControllerTest {
                 .andExpect(view().name("check-result"))
                 .andExpect(content().string(containsString("Выписка не сохранена")))
                 .andExpect(content().string(containsString("1500")))
+                .andExpect(content().string(containsString("<td>Игры</td>")))
                 .andExpect(header().string("Cache-Control", containsString("no-store")));
     }
 
@@ -105,6 +107,7 @@ class OneTimeCheckWebControllerTest {
         MoneyFlowReport moneyFlow = calculator.calculate(List.of(
                 new MoneyFlowTotal(MoneyFlowType.PURCHASE, MoneyPurpose.UNKNOWN, BigDecimal.ZERO, new BigDecimal("1500"), 2)));
         return new OneTimeCheckReport(LocalDate.of(2026, 7, 1), LocalDate.of(2026, 7, 31), 2, moneyFlow,
-                List.of(new MonthlyMoneyFlow(YearMonth.of(2026, 7), moneyFlow, true)), 1, 1);
+                List.of(new MonthlyMoneyFlow(YearMonth.of(2026, 7), moneyFlow, true)), 1, 1,
+                List.of(new CategorySpending("Игры", new BigDecimal("1500"))));
     }
 }

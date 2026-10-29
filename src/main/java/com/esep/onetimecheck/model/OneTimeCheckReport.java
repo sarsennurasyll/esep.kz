@@ -11,6 +11,7 @@ import java.util.List;
  *
  * @param purchasesWithMerchant покупки и возвраты покупок, у которых найден продавец в общей базе
  * @param purchasesWithoutMerchant покупки и возвраты покупок без продавца
+ * @param categorySpending покупки по категориям продавцов общей базы, по убыванию суммы
  */
 public record OneTimeCheckReport(
         LocalDate periodFrom,
@@ -19,10 +20,12 @@ public record OneTimeCheckReport(
         MoneyFlowReport moneyFlow,
         List<MonthlyMoneyFlow> monthlyMoneyFlow,
         int purchasesWithMerchant,
-        int purchasesWithoutMerchant
+        int purchasesWithoutMerchant,
+        List<CategorySpending> categorySpending
 ) {
 
     public OneTimeCheckReport {
         monthlyMoneyFlow = List.copyOf(monthlyMoneyFlow);
+        categorySpending = List.copyOf(categorySpending);
     }
 }

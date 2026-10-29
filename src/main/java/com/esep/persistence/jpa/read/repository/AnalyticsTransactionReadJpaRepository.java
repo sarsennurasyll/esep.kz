@@ -26,6 +26,8 @@ public interface AnalyticsTransactionReadJpaRepository extends Repository<Transa
             """)
     AnalyticsSummaryProjection getSummary();
 
+    // Траты по категориям — только покупки за вычетом возвратов, как строка «Расходы» в отчёте о движении денег.
+    // Переводы людям и наличные сюда не входят: у них нет категории покупки.
     @Query("""
             select coalesce(category.code, 'UNCATEGORIZED') as category,
                    coalesce(category.name, 'Без категории') as categoryName,
@@ -33,8 +35,10 @@ public interface AnalyticsTransactionReadJpaRepository extends Repository<Transa
             from Transaction transaction
             left join transaction.merchant merchant
             left join merchant.category category
-            where transaction.amount < 0
+            where ((transaction.flowType = com.esep.moneyflow.model.MoneyFlowType.PURCHASE and transaction.amount < 0)
+                   or (transaction.flowType = com.esep.moneyflow.model.MoneyFlowType.PURCHASE_REFUND and transaction.amount > 0))
             group by coalesce(category.code, 'UNCATEGORIZED'), coalesce(category.name, 'Без категории')
+            having sum(-transaction.amount) > 0
             order by sum(-transaction.amount) desc
             """)
     List<CategoryExpenseProjection> findCategoryExpenses();
@@ -46,7 +50,7 @@ public interface AnalyticsTransactionReadJpaRepository extends Repository<Transa
             from Transaction transaction
             left join transaction.merchant merchant
             left join merchant.category category
-            where transaction.amount < 0
+            where transaction.flowType = com.esep.moneyflow.model.MoneyFlowType.PURCHASE and transaction.amount < 0
             group by coalesce(category.code, 'UNCATEGORIZED'), coalesce(category.name, 'Без категории')
             order by count(transaction) desc, coalesce(category.name, 'Без категории') asc
             """)
