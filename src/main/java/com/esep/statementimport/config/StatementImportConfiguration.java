@@ -87,8 +87,8 @@ public class StatementImportConfiguration {
     }
 
     @Bean
-    DefaultStatementImporter statementImporter(MerchantRecognitionService merchantRecognitionService) {
-        return new DefaultStatementImporter(merchantRecognitionService);
+    DefaultStatementImporter statementImporter(TransactionImportProcessor transactionImportProcessor) {
+        return new DefaultStatementImporter(transactionImportProcessor);
     }
 
     @Bean
@@ -115,7 +115,6 @@ public class StatementImportConfiguration {
     DefaultStatementImportUseCase statementImportUseCase(
             StatementParserRegistry statementParserRegistry,
             DefaultStatementImporter statementImporter,
-            TransactionImportProcessor transactionImportProcessor,
             TransactionFingerprintGenerator transactionFingerprintGenerator,
             StatementPeriodResolver statementPeriodResolver,
             MoneyFlowClassifierRegistry moneyFlowClassifierRegistry,
@@ -126,7 +125,6 @@ public class StatementImportConfiguration {
         return new DefaultStatementImportUseCase(
                 statementParserRegistry,
                 statementImporter,
-                transactionImportProcessor,
                 transactionFingerprintGenerator,
                 statementPeriodResolver,
                 moneyFlowClassifierRegistry,

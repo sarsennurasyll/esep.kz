@@ -188,7 +188,6 @@ class DefaultStatementImportUseCaseTest {
         return new DefaultStatementImportUseCase(
                 statementParserRegistry,
                 new DefaultStatementImporter(processor),
-                processor,
                 new TransactionFingerprintGenerator(),
                 new StatementPeriodResolver(),
                 new MoneyFlowClassifierRegistry(List.of(new KaspiMoneyFlowClassifier())),

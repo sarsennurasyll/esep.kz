@@ -71,8 +71,7 @@ class StatementImportUseCaseIntegrationTest {
 
         return new DefaultStatementImportUseCase(
                 new DefaultStatementParserRegistry(List.of(statementParser)),
-                new DefaultStatementImporter(recognitionService),
-                new TransactionImportProcessor(recognitionService),
+                new DefaultStatementImporter(new TransactionImportProcessor(recognitionService)),
                 new TransactionFingerprintGenerator(),
                 new StatementPeriodResolver(),
                 new MoneyFlowClassifierRegistry(List.of(new KaspiMoneyFlowClassifier())),
