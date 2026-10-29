@@ -5,6 +5,7 @@ import com.esep.moneyflow.model.MoneyPurpose;
 import com.esep.moneyflow.service.PurposeLabelingService;
 import com.esep.security.LocalSecurityConfiguration;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -20,6 +21,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(PurposeLabelingController.class)
+@WithMockUser
 @Import(LocalSecurityConfiguration.class)
 class PurposeLabelingControllerTest {
 

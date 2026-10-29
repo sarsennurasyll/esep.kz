@@ -12,6 +12,7 @@ import com.esep.statementimport.query.interfaces.TransactionReadQuery;
 import com.esep.statementimport.query.model.StatementQueryResult;
 import com.esep.statementimport.query.model.TransactionQueryResult;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -29,6 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(StatementQueryController.class)
+@WithMockUser
 @Import(LocalSecurityConfiguration.class)
 class StatementQueryControllerTest {
 

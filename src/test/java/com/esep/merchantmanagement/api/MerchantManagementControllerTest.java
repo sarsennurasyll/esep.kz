@@ -8,6 +8,7 @@ import com.esep.merchantmanagement.model.MerchantSummary;
 import com.esep.merchantmanagement.model.UnknownMerchantDescription;
 import com.esep.merchantresolver.model.MerchantReference;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -25,6 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(MerchantManagementController.class)
+@WithMockUser
 @Import(LocalSecurityConfiguration.class)
 class MerchantManagementControllerTest {
 

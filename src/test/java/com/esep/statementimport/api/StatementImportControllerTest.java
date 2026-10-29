@@ -14,6 +14,7 @@ import com.esep.statementimport.pdf.PdfLimitExceededException;
 import com.esep.statementimport.pdf.PdfProcessingTimeoutException;
 import com.esep.statementimport.service.DefaultStatementImportUseCase;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
@@ -34,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(StatementImportController.class)
+@WithMockUser
 @Import(LocalSecurityConfiguration.class)
 class StatementImportControllerTest {
 
