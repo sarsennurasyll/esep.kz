@@ -7,6 +7,7 @@ import com.esep.entity.TransactionType;
 import com.esep.moneyflow.exception.OperationNotFoundException;
 import com.esep.moneyflow.model.ClassificationSource;
 import com.esep.moneyflow.model.CounterpartyLabelingItem;
+import com.esep.moneyflow.model.CounterpartyOperation;
 import com.esep.moneyflow.model.CounterpartyPurposeRule;
 import com.esep.moneyflow.model.MoneyDirection;
 import com.esep.moneyflow.model.MoneyFlowType;
@@ -158,6 +159,41 @@ class PurposeLabelingServiceIntegrationTest {
 
         assertThat(purposeOf("1")).isEqualTo(MoneyPurpose.DEBT);
         assertThat(purposeOf("2")).isEqualTo(MoneyPurpose.UNKNOWN);
+    }
+
+    @Test
+    void shouldCountManualExceptionsPerCounterparty() {
+        Transaction manual = operation("Тестов Т.", "30000", MoneyFlowType.TRANSFER_FROM_PERSON, "1");
+        operation("Тестов Т.", "50000", MoneyFlowType.TRANSFER_FROM_PERSON, "2");
+        entityManager.flush();
+        service.setRule("Тестов Т.", MoneyDirection.INFLOW, MoneyPurpose.INCOME_WORK);
+        service.setOperationPurpose(manual.getId(), MoneyPurpose.DEBT);
+
+        CounterpartyLabelingItem item = service.findCounterparties().getFirst();
+
+        assertThat(item.operationCount()).isEqualTo(2);
+        assertThat(item.manualOperationCount()).isEqualTo(1);
+        assertThat(item.labeledAmount()).isEqualByComparingTo("80000");
+    }
+
+    @Test
+    void shouldListCounterpartyOperationsInOneDirectionWithTheirSources() {
+        operation("Тестов Т.", "50000", MoneyFlowType.TRANSFER_FROM_PERSON, "1");
+        Transaction manual = operation("ТЕСТОВ  Т.", "30000", MoneyFlowType.TRANSFER_FROM_PERSON, "2");
+        operation("Тестов Т.", "-7000", MoneyFlowType.TRANSFER_TO_PERSON, "3");
+        operation("Тестов Т.", "1500", MoneyFlowType.PURCHASE_REFUND, "4");
+        operation("Вымыслов В.", "9000", MoneyFlowType.TRANSFER_FROM_PERSON, "5");
+        entityManager.flush();
+        service.setRule("Тестов Т.", MoneyDirection.INFLOW, MoneyPurpose.INCOME_WORK);
+        service.setOperationPurpose(manual.getId(), MoneyPurpose.DEBT);
+
+        var operations = service.findCounterpartyOperations("тестов т.", MoneyDirection.INFLOW);
+
+        assertThat(operations).extracting(CounterpartyOperation::id).containsExactly(manual.getId(), transaction("1").getId());
+        assertThat(operations).extracting(CounterpartyOperation::purposeSource)
+                .containsExactly(ClassificationSource.USER, ClassificationSource.PERSONAL_RULE);
+        assertThat(operations.getFirst().statementId()).isEqualTo(statement.getId());
+        assertThat(service.findCounterpartyOperations(" ", MoneyDirection.INFLOW)).isEmpty();
     }
 
     @Test

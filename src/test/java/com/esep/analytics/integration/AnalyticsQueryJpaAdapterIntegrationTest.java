@@ -159,6 +159,16 @@ class AnalyticsQueryJpaAdapterIntegrationTest {
     }
 
     @Test
+    void shouldReturnStatementCoverages() {
+        statement("x");
+        entityManager.flush();
+
+        assertThat(analyticsQuery.getStatementCoverages())
+                .extracting(coverage -> coverage.periodFrom() + ".." + coverage.periodTo())
+                .containsExactly("2026-07-01..2026-08-31");
+    }
+
+    @Test
     void shouldGroupMoneyFlowTotalsByCalendarMonth() {
         Statement statement = statement("y");
         flowTransaction(statement, MoneyFlowType.PURCHASE, MoneyPurpose.UNKNOWN, "-100.00", "m", LocalDate.of(2026, 7, 31));

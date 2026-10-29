@@ -8,8 +8,9 @@ import com.esep.analytics.model.CategoryExpense;
 import com.esep.analytics.model.MerchantExpense;
 import com.esep.analytics.model.MerchantTypeExpense;
 import com.esep.analytics.model.MonthlyAnalytics;
+import com.esep.analytics.model.MonthlyMoneyFlow;
+import com.esep.analytics.model.StatementCoverage;
 import com.esep.moneyflow.model.MoneyFlowReport;
-import com.esep.moneyflow.model.MonthlyMoneyFlowReport;
 import com.esep.moneyflow.service.MoneyFlowReportCalculator;
 import com.esep.analytics.model.PersonTransfer;
 import org.springframework.stereotype.Service;
@@ -97,7 +98,14 @@ public class DefaultAnalyticsService implements AnalyticsService {
     }
 
     @Override
-    public List<MonthlyMoneyFlowReport> getMonthlyMoneyFlowReports() {
-        return moneyFlowReportCalculator.calculateMonthly(analyticsQuery.getMonthlyMoneyFlowTotals());
+    public List<MonthlyMoneyFlow> getMonthlyMoneyFlowReports() {
+        List<StatementCoverage> coverages = analyticsQuery.getStatementCoverages();
+        return moneyFlowReportCalculator.calculateMonthly(analyticsQuery.getMonthlyMoneyFlowTotals()).stream()
+                .map(monthly -> new MonthlyMoneyFlow(
+                        monthly.month(),
+                        monthly.report(),
+                        MonthCoverage.isComplete(monthly.month(), coverages)
+                ))
+                .toList();
     }
 }

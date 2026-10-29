@@ -2,6 +2,7 @@ package com.esep.moneyflow.interfaces;
 
 import com.esep.moneyflow.model.ClassificationSource;
 import com.esep.moneyflow.model.CounterpartyActivity;
+import com.esep.moneyflow.model.CounterpartyOperation;
 import com.esep.moneyflow.model.LabelableOperation;
 import com.esep.moneyflow.model.MoneyDirection;
 import com.esep.moneyflow.model.MoneyFlowType;
@@ -21,6 +22,9 @@ public interface PurposeLabelingTransactions {
 
     /** Возвращает в «неизвестно» только назначения, установленные правилом. */
     long resetRulePurpose(Collection<String> descriptions, MoneyDirection direction, Collection<MoneyFlowType> flowTypes);
+
+    /** Операции с указанными описаниями в одном направлении, новые первыми. */
+    List<CounterpartyOperation> findOperations(Collection<String> descriptions, MoneyDirection direction, Collection<MoneyFlowType> flowTypes);
 
     Optional<LabelableOperation> findOperation(long operationId);
 

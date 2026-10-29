@@ -1,7 +1,7 @@
 package com.esep.analytics.api;
 
 import com.esep.moneyflow.model.MoneyFlowReport;
-import com.esep.moneyflow.model.MonthlyMoneyFlowReport;
+import com.esep.analytics.model.MonthlyMoneyFlow;
 import com.esep.security.LocalSecurityConfiguration;
 import org.springframework.context.annotation.Import;
 import com.esep.analytics.interfaces.AnalyticsService;
@@ -85,13 +85,14 @@ class AnalyticsControllerTest {
                 new BigDecimal("10000"), BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("3000"),
                 new BigDecimal("14000"), new BigDecimal("3500"), new BigDecimal("0.0000"), new BigDecimal("0.8571")
         );
-        when(analyticsService.getMonthlyMoneyFlowReports()).thenReturn(List.of(new MonthlyMoneyFlowReport(YearMonth.of(2026, 8), report)));
+        when(analyticsService.getMonthlyMoneyFlowReports()).thenReturn(List.of(new MonthlyMoneyFlow(YearMonth.of(2026, 8), report, false)));
 
         mockMvc.perform(get("/api/analytics/money-flow/monthly"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].month").value("2026-08"))
                 .andExpect(jsonPath("$[0].report.income").value(4000))
-                .andExpect(jsonPath("$[0].report.unknownOutflowShare").value(0.8571));
+                .andExpect(jsonPath("$[0].report.unknownOutflowShare").value(0.8571))
+                .andExpect(jsonPath("$[0].complete").value(false));
     }
 
     @Test

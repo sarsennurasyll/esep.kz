@@ -2,6 +2,7 @@ package com.esep.persistence.jpa.read.repository;
 
 import com.esep.entity.Transaction;
 import com.esep.moneyflow.model.ClassificationSource;
+import com.esep.moneyflow.model.CounterpartyOperation;
 import com.esep.moneyflow.model.LabelableOperation;
 import com.esep.moneyflow.model.MoneyFlowType;
 import com.esep.moneyflow.model.MoneyPurpose;
@@ -27,6 +28,22 @@ public interface PurposeLabelingJpaRepository extends Repository<Transaction, Lo
             """)
     Optional<LabelableOperation> findOperation(@Param("operationId") long operationId);
 
+    @Query("""
+            select new com.esep.moneyflow.model.CounterpartyOperation(
+                       transaction.id, transaction.statement.id, transaction.transactionDate, transaction.description,
+                       transaction.amount, transaction.purpose, transaction.purposeSource)
+            from Transaction transaction
+            where transaction.description in :descriptions
+              and transaction.flowType in :flowTypes
+              and ((:inflow = true and transaction.amount > 0) or (:inflow = false and transaction.amount < 0))
+            order by transaction.transactionDate desc, transaction.id desc
+            """)
+    List<CounterpartyOperation> findOperations(
+            @Param("descriptions") Collection<String> descriptions,
+            @Param("flowTypes") Collection<MoneyFlowType> flowTypes,
+            @Param("inflow") boolean inflow
+    );
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             update Transaction transaction
@@ -40,20 +57,20 @@ public interface PurposeLabelingJpaRepository extends Repository<Transaction, Lo
     );
 
     @Query("""
-            select transaction.description as description, transaction.purpose as purpose,
+            select transaction.description as description, transaction.purpose as purpose, transaction.purposeSource as purposeSource,
                    coalesce(sum(transaction.amount), 0) as amount, count(transaction) as operationCount
             from Transaction transaction
             where transaction.amount > 0 and transaction.flowType in :flowTypes
-            group by transaction.description, transaction.purpose
+            group by transaction.description, transaction.purpose, transaction.purposeSource
             """)
     List<CounterpartyActivityProjection> findInflowActivity(@Param("flowTypes") Collection<MoneyFlowType> flowTypes);
 
     @Query("""
-            select transaction.description as description, transaction.purpose as purpose,
+            select transaction.description as description, transaction.purpose as purpose, transaction.purposeSource as purposeSource,
                    coalesce(sum(-transaction.amount), 0) as amount, count(transaction) as operationCount
             from Transaction transaction
             where transaction.amount < 0 and transaction.flowType in :flowTypes
-            group by transaction.description, transaction.purpose
+            group by transaction.description, transaction.purpose, transaction.purposeSource
             """)
     List<CounterpartyActivityProjection> findOutflowActivity(@Param("flowTypes") Collection<MoneyFlowType> flowTypes);
 

@@ -1,5 +1,6 @@
 package com.esep.analytics.interfaces;
 
+import com.esep.analytics.model.StatementCoverage;
 import com.esep.analytics.model.AnalyticsSummary;
 import com.esep.analytics.model.CategoryOperationCount;
 import com.esep.analytics.model.CategoryExpense;
@@ -35,4 +36,6 @@ public interface AnalyticsQuery {
     List<MoneyFlowTotal> getMoneyFlowTotals();
 
     List<MonthlyMoneyFlowTotal> getMonthlyMoneyFlowTotals();
+
+    List<StatementCoverage> getStatementCoverages();
 }
