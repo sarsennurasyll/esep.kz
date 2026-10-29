@@ -1,9 +1,13 @@
 package com.esep.merchantmanagement.policy;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+import java.time.Duration;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 class PersonalNameDetectorTest {
 
@@ -41,5 +45,16 @@ class PersonalNameDetectorTest {
     })
     void shouldKeepTradeNames(String name) {
         assertThat(PersonalNameDetector.looksLikePersonalName(name)).isFalse();
+    }
+
+    @Test
+    void shouldHandleCraftedLongNamesInLinearTime() {
+        String quotes = "ИП " + "\"".repeat(100_000) + "A";
+        String letters = "ИП Т" + " Т".repeat(50_000) + "ОВИЧ!";
+
+        assertTimeoutPreemptively(Duration.ofSeconds(1), () -> {
+            PersonalNameDetector.looksLikePersonalName(quotes);
+            PersonalNameDetector.looksLikePersonalName(letters);
+        });
     }
 }

@@ -1,5 +1,6 @@
 package com.esep.merchantmanagement.policy;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -13,17 +14,17 @@ import java.util.regex.Pattern;
  */
 public final class PersonalNameDetector {
 
-    private static final Pattern ENTREPRENEUR_PREFIX = Pattern.compile("^(ИП|IP|И\\.П\\.)(\\s+|$)", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
-    // Фамилия и один-два инициала: «Тестов Т.», «Тестова А.Б.», «TESTOV T».
-    private static final Pattern SURNAME_WITH_INITIALS = Pattern.compile(
-            "^\\p{L}+(?:-\\p{L}+)?\\s+\\p{L}\\.?(?:\\s?\\p{L}\\.?)?$");
+    // Все шаблоны однозначные и без вложенных повторов: названия приходят из выписок, а значит, от пользователя,
+    // и выражение не должно замедляться на специально подобранной строке (ReDoS).
+    private static final Pattern ENTREPRENEUR_PREFIX = Pattern.compile("^(ИП|IP|И\\.П\\.)( |$)");
+    // Фамилия и один-два инициала: «Тестов Т.», «Тестова А.Б.», «TESTOV T». Пробелы уже сведены к одному.
+    private static final Pattern SURNAME_WITH_INITIALS = Pattern.compile("^\\p{L}+(?:-\\p{L}+)? \\p{L}\\.?(?: ?\\p{L}\\.?)?$");
+    private static final Pattern TRADE_NAME_MARKER = Pattern.compile("[\\d«»\"'&]");
     // Отчество или казахская форма «сын/дочь» последним словом: «Тестович», «Тестовна», «Тестұлы», «Тестқызы».
-    private static final Pattern PATRONYMIC = Pattern.compile(
-            ".*\\s\\p{L}*(ОВИЧ|ЕВИЧ|ИЧ|ОВНА|ЕВНА|ИЧНА|УЛЫ|ҰЛЫ|КЫЗЫ|ҚЫЗЫ)$");
+    private static final List<String> PATRONYMIC_ENDINGS = List.of("ОВИЧ", "ЕВИЧ", "ИЧ", "ОВНА", "ЕВНА", "ИЧНА", "УЛЫ", "ҰЛЫ", "КЫЗЫ", "ҚЫЗЫ");
     // Типичные окончания фамилий; проверяются только у названия после «ИП», где одно слово чаще всего фамилия.
-    private static final Pattern SURNAME_ENDING = Pattern.compile(
-            "^\\p{IsCyrillic}+(ОВ|ЕВ|ЁВ|ИН|ЫН|ОВА|ЕВА|ЁВА|ИНА|ЫНА|СКИЙ|ЦКИЙ|СКАЯ|ЦКАЯ|ЕНКО|УК|ЮК|ЯН)$");
-    private static final Pattern TRADE_NAME_MARKERS = Pattern.compile(".*[\\d«»\"'&].*");
+    private static final List<String> SURNAME_ENDINGS = List.of(
+            "ОВ", "ЕВ", "ЁВ", "ИН", "ЫН", "ОВА", "ЕВА", "ЁВА", "ИНА", "ЫНА", "СКИЙ", "ЦКИЙ", "СКАЯ", "ЦКАЯ", "ЕНКО", "УК", "ЮК", "ЯН");
 
     private PersonalNameDetector() {
     }
@@ -38,14 +39,31 @@ public final class PersonalNameDetector {
         if (withoutPrefix.isEmpty()) {
             return entrepreneur;
         }
-        if (SURNAME_WITH_INITIALS.matcher(withoutPrefix).matches() || PATRONYMIC.matcher(withoutPrefix).matches()) {
+        String[] words = withoutPrefix.split(" ");
+        if (SURNAME_WITH_INITIALS.matcher(withoutPrefix).matches() || endsWithPatronymic(words)) {
             return true;
         }
-        if (!entrepreneur || TRADE_NAME_MARKERS.matcher(withoutPrefix).matches()) {
+        if (!entrepreneur || TRADE_NAME_MARKER.matcher(withoutPrefix).find()) {
             return false;
         }
-        String[] words = withoutPrefix.split(" ");
         // «ИП Тестов», «ИП Тестова Анна»: фамилия первым словом из одного-двух кириллических слов.
-        return words.length <= 2 && SURNAME_ENDING.matcher(words[0]).matches();
+        return words.length <= 2 && isCyrillicWord(words[0]) && SURNAME_ENDINGS.stream().anyMatch(ending -> hasEnding(words[0], ending));
+    }
+
+    private static boolean endsWithPatronymic(String[] words) {
+        String last = words[words.length - 1];
+        return words.length >= 2 && isLetterWord(last) && PATRONYMIC_ENDINGS.stream().anyMatch(ending -> hasEnding(last, ending));
+    }
+
+    private static boolean hasEnding(String word, String ending) {
+        return word.length() > ending.length() && word.endsWith(ending);
+    }
+
+    private static boolean isLetterWord(String word) {
+        return !word.isEmpty() && word.codePoints().allMatch(Character::isLetter);
+    }
+
+    private static boolean isCyrillicWord(String word) {
+        return !word.isEmpty() && word.codePoints().allMatch(codePoint -> Character.UnicodeScript.of(codePoint) == Character.UnicodeScript.CYRILLIC);
     }
 }
