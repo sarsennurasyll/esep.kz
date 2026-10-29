@@ -3,7 +3,9 @@ package com.esep.merchantmanagement.api;
 import com.esep.merchantmanagement.exception.MerchantAliasAlreadyExistsException;
 import com.esep.merchantmanagement.exception.MerchantDeletionNotAllowedException;
 import com.esep.merchantmanagement.exception.MerchantNotFoundException;
+import com.esep.merchantmanagement.exception.MerchantVersionConflictException;
 import org.springframework.http.HttpStatus;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 /**
  * Единое соответствие ошибок управления продавцами HTTP-статусам.
@@ -20,7 +22,9 @@ public final class MerchantApiErrors {
         if (exception instanceof MerchantNotFoundException) {
             return HttpStatus.NOT_FOUND;
         }
-        if (exception instanceof MerchantAliasAlreadyExistsException || exception instanceof MerchantDeletionNotAllowedException) {
+        if (exception instanceof MerchantAliasAlreadyExistsException || exception instanceof MerchantDeletionNotAllowedException
+                || exception instanceof MerchantVersionConflictException
+                || exception instanceof ObjectOptimisticLockingFailureException) {
             return HttpStatus.CONFLICT;
         }
         if (exception instanceof IllegalArgumentException) {

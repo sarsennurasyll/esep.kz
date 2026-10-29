@@ -13,6 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
@@ -108,6 +109,12 @@ public class Merchant {
     private long rejectedCount = 0;
 
     private Instant lastVerifiedAt;
+
+    /** Версия карточки: правка по устаревшей версии отклоняется, а не перезаписывает чужие изменения. */
+    @Version
+    @Column(nullable = false)
+    @Builder.Default
+    private long version = 0;
 
     @OneToMany(
             mappedBy = "merchant",

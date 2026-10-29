@@ -4,6 +4,7 @@ import com.esep.entity.Category;
 import com.esep.entity.DetectionSource;
 import com.esep.entity.Merchant;
 import com.esep.entity.MerchantType;
+import com.esep.merchantmanagement.exception.MerchantVersionConflictException;
 import com.esep.merchantmanagement.interfaces.MerchantAliasMatchCatalog;
 import com.esep.merchantmanagement.model.KnowledgeBaseAliasCommand;
 import com.esep.merchantmanagement.model.KnowledgeBaseMerchantCommand;
@@ -59,6 +60,19 @@ class KnowledgeBasePrivacyIntegrationTest {
         systemPersonTransfers = merchant("Переводы людям", "ПЕРЕВОДЫ ЛЮДЯМ", MerchantType.PERSON, transfers);
         store = merchant("TEST STORE", "TEST STORE", MerchantType.STORE, grocery);
         entityManager.flush();
+    }
+
+    @Test
+    void shouldRejectUpdateBasedOnOutdatedVersion() {
+        String reference = String.valueOf(store.getId());
+        long version = knowledgeBaseMerchantService.findById(reference).version();
+        knowledgeBaseMerchantService.update(reference, new KnowledgeBaseMerchantCommand("TEST STORE NEW", MerchantType.STORE, "GROCERY", version));
+        entityManager.flush();
+
+        assertThatThrownBy(() -> knowledgeBaseMerchantService.update(reference,
+                new KnowledgeBaseMerchantCommand("TEST STORE OLD", MerchantType.STORE, "GROCERY", version)))
+                .isInstanceOf(MerchantVersionConflictException.class);
+        assertThat(knowledgeBaseMerchantService.findById(reference).name()).isEqualTo("TEST STORE NEW");
     }
 
     @Test

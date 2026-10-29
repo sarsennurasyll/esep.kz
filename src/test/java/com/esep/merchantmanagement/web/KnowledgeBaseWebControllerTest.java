@@ -1,5 +1,16 @@
 package com.esep.merchantmanagement.web;
 
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.hamcrest.Matchers.containsString;
+import com.esep.merchantmanagement.api.dto.KnowledgeBaseMerchantRequest;
+import com.esep.entity.MerchantType;
 import com.esep.security.LocalSecurityConfiguration;
 import org.springframework.context.annotation.Import;
 import org.junit.jupiter.api.Test;
@@ -37,6 +48,19 @@ class KnowledgeBaseWebControllerTest {
 
         String addForm = page.substring(page.indexOf("Добавить продавца"), page.indexOf("</form>", page.indexOf("Добавить продавца")));
         assertThat(addForm).contains("value=\"STORE\"").doesNotContain("value=\"PERSON\"");
+    }
+
+    @Test
+    void shouldExplainEditConflict() throws Exception {
+        doThrow(new MerchantApiException(409, "Conflict", null)).when(knowledgeBaseWebApiClient).updateMerchant(eq("42"), any());
+
+        mockMvc.perform(post("/knowledge-base/merchants/42")
+                        .param("name", "MAGNUM").param("merchantType", "STORE").param("categoryCode", "GROCERY").param("version", "2")
+                        .with(csrf()))
+                .andExpect(redirectedUrl("/knowledge-base/merchants/42"))
+                .andExpect(flash().attribute("errorMessage", containsString("изменили в другом окне")));
+
+        verify(knowledgeBaseWebApiClient).updateMerchant("42", new KnowledgeBaseMerchantRequest("MAGNUM", MerchantType.STORE, "GROCERY", 2L));
     }
 
     @Test

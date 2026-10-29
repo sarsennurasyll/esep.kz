@@ -18,6 +18,7 @@ public record KnowledgeBaseMerchant(
         BigDecimal totalAmount,
         LocalDate firstTransactionDate,
         LocalDate lastTransactionDate,
-        List<KnowledgeBaseAlias> aliases
+        List<KnowledgeBaseAlias> aliases,
+        long version
 ) {
 }

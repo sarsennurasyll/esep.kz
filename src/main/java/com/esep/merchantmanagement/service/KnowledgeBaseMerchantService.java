@@ -6,6 +6,7 @@ import com.esep.entity.MerchantAlias;
 import com.esep.entity.MerchantType;
 import com.esep.merchantmanagement.exception.MerchantDeletionNotAllowedException;
 import com.esep.merchantmanagement.exception.MerchantNotFoundException;
+import com.esep.merchantmanagement.exception.MerchantVersionConflictException;
 import com.esep.merchantmanagement.model.KnowledgeBaseAlias;
 import com.esep.merchantmanagement.model.KnowledgeBaseAliasCommand;
 import com.esep.merchantmanagement.model.KnowledgeBaseMerchant;
@@ -75,6 +76,9 @@ public class KnowledgeBaseMerchantService {
     @Transactional
     public void update(String reference, KnowledgeBaseMerchantCommand command) {
         Merchant merchant = findMerchant(reference);
+        if (command.expectedVersion() != null && command.expectedVersion() != merchant.getVersion()) {
+            throw new MerchantVersionConflictException();
+        }
         // Системный получатель уже имеет тип PERSON и остаётся редактируемым; новым записям этот тип не присваивается.
         if (merchant.getMerchantType() != command.merchantType()) requireAllowedInSharedKnowledgeBase(command.merchantType());
         String normalized = normalized(command.name());
@@ -144,6 +148,6 @@ public class KnowledgeBaseMerchantService {
                 merchant.getCategory().getCode(), merchant.getCategory().getName(),
                 activity == null ? 0 : activity.getTransactionCount(), activity == null ? BigDecimal.ZERO : activity.getTotalAmount(),
                 activity == null ? null : activity.getFirstTransactionDate(), activity == null ? null : activity.getLastTransactionDate(),
-                merchantAliases);
+                merchantAliases, merchant.getVersion());
     }
 }
