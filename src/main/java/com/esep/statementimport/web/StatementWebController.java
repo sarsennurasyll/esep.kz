@@ -3,6 +3,10 @@ package com.esep.statementimport.web;
 import com.esep.entity.BankType;
 import com.esep.moneyflow.model.MoneyDirection;
 import com.esep.statementimport.api.dto.StatementImportResponse;
+import com.esep.statementimport.exception.StatementDeletionMismatchException;
+import com.esep.statementimport.exception.StatementNotFoundException;
+import com.esep.statementimport.model.StatementDeletionPlan;
+import com.esep.statementimport.service.StatementDeletionService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -13,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,9 +28,11 @@ import java.util.Map;
 public class StatementWebController {
 
     private final StatementWebApiClient statementWebApiClient;
+    private final StatementDeletionService statementDeletionService;
 
-    public StatementWebController(StatementWebApiClient statementWebApiClient) {
+    public StatementWebController(StatementWebApiClient statementWebApiClient, StatementDeletionService statementDeletionService) {
         this.statementWebApiClient = statementWebApiClient;
+        this.statementDeletionService = statementDeletionService;
     }
 
     @GetMapping("/import")
@@ -62,7 +69,29 @@ public class StatementWebController {
                 MoneyDirection.INFLOW.name(), MoneyDirection.INFLOW.knownPurposes(),
                 MoneyDirection.OUTFLOW.name(), MoneyDirection.OUTFLOW.knownPurposes()
         ));
+        model.addAttribute("deletionPlan", statementDeletionService.plan(id));
         return "statement-details";
+    }
+
+    /** Удаляет ровно тот набор выписок, который пользователь видел на странице подтверждения. */
+    @PostMapping("/statements/{id}/delete")
+    public String deleteStatement(
+            @PathVariable long id,
+            @RequestParam(name = "statementIds") List<Long> statementIds,
+            RedirectAttributes redirectAttributes
+    ) {
+        try {
+            StatementDeletionPlan deleted = statementDeletionService.delete(id, statementIds);
+            redirectAttributes.addFlashAttribute("successMessage", "Удалено выписок: " + deleted.statementIds().size()
+                    + ", операций: " + deleted.operationCount() + ". Правила назначения контрагентов сохранены; их можно удалить на странице «Назначение».");
+            return "redirect:/statements";
+        } catch (StatementDeletionMismatchException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Набор выписок для удаления изменился. Проверьте его ещё раз и подтвердите удаление.");
+            return "redirect:/statements/" + id;
+        } catch (StatementNotFoundException exception) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Выписка уже удалена.");
+            return "redirect:/statements";
+        }
     }
 
     // Текст выбирается по коду причины из заранее заданного списка; сообщение исключения пользователю не показывается.

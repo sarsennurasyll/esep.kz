@@ -11,6 +11,9 @@ import com.esep.moneyflow.model.MoneyPurpose;
 import com.esep.statementimport.api.dto.StatementImportResponse;
 import com.esep.statementimport.api.dto.StatementResponse;
 import com.esep.statementimport.api.dto.TransactionResponse;
+import com.esep.statementimport.exception.StatementDeletionMismatchException;
+import com.esep.statementimport.model.StatementDeletionPlan;
+import com.esep.statementimport.service.StatementDeletionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -27,15 +30,18 @@ import java.util.List;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
@@ -48,6 +54,9 @@ class StatementWebControllerTest {
 
     @MockitoBean
     private StatementWebApiClient statementWebApiClient;
+
+    @MockitoBean
+    private StatementDeletionService statementDeletionService;
 
     @Test
     void shouldRedirectToImportedStatement() throws Exception {
@@ -144,8 +153,13 @@ class StatementWebControllerTest {
                         2L, MoneyFlowType.TRANSFER_FROM_PERSON, MoneyPurpose.INCOME_WORK, ClassificationSource.USER)
         ));
 
+        when(statementDeletionService.plan(42L)).thenReturn(new StatementDeletionPlan(42L, List.of(42L, 43L), 7));
+
         mockMvc.perform(get("/statements/42"))
                 .andExpect(status().isOk())
+                .andExpect(content().string(containsString("/statements/42/delete")))
+                .andExpect(content().string(containsString("name=\"statementIds\" value=\"43\"")))
+                .andExpect(content().string(containsString("№43")))
                 .andExpect(view().name("statement-details"))
                 .andExpect(model().attributeExists("statement"))
                 .andExpect(model().attributeExists("transactions"))
@@ -153,6 +167,35 @@ class StatementWebControllerTest {
                 .andExpect(content().string(containsString("/purposes/operations/2/clear")))
                 .andExpect(content().string(not(containsString("/purposes/operations/1\""))))
                 .andExpect(content().string(containsString("определено банком")));
+    }
+
+    @Test
+    void shouldDeleteConfirmedStatementsAndReturnToList() throws Exception {
+        when(statementDeletionService.delete(42L, List.of(42L, 43L))).thenReturn(new StatementDeletionPlan(42L, List.of(42L, 43L), 7));
+
+        mockMvc.perform(post("/statements/42/delete").param("statementIds", "42", "43").with(csrf()))
+                .andExpect(redirectedUrl("/statements"))
+                .andExpect(flash().attribute("successMessage", containsString("операций: 7")));
+
+        verify(statementDeletionService).delete(42L, List.of(42L, 43L));
+    }
+
+    @Test
+    void shouldReturnToStatementWhenDeletionSetChanged() throws Exception {
+        when(statementDeletionService.delete(42L, List.of(42L)))
+                .thenThrow(new StatementDeletionMismatchException(new StatementDeletionPlan(42L, List.of(42L, 43L), 7)));
+
+        mockMvc.perform(post("/statements/42/delete").param("statementIds", "42").with(csrf()))
+                .andExpect(redirectedUrl("/statements/42"))
+                .andExpect(flash().attributeExists("errorMessage"));
+    }
+
+    @Test
+    void shouldRejectDeletionWithoutCsrfToken() throws Exception {
+        mockMvc.perform(post("/statements/42/delete").param("statementIds", "42"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(statementDeletionService);
     }
 
     @Test
