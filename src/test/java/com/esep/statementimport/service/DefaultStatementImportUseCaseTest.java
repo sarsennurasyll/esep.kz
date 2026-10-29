@@ -115,6 +115,29 @@ class DefaultStatementImportUseCaseTest {
     }
 
     @Test
+    void shouldReportPreviouslyImportedOperationsMissingFromNewStatement() {
+        StatementParser parser = mock(StatementParser.class);
+        MerchantRecognitionService recognitionService = mock(MerchantRecognitionService.class);
+        RecordingTransactionCatalog transactionCatalog = new RecordingTransactionCatalog();
+        transactionCatalog.existingOperations = List.of(
+                new ExistingOperationKey(LocalDate.of(2026, 7, 13), new BigDecimal("-900"), BankOperationType.PURCHASE, "CANCELLED SHOP"),
+                new ExistingOperationKey(LocalDate.of(2026, 7, 14), new BigDecimal("-300"), BankOperationType.PURCHASE, "LATE SHOP")
+        );
+        when(parser.parse(any())).thenReturn(new ParsedStatement("1234", null, null, List.of(
+                new ParsedTransaction(LocalDate.of(2026, 7, 12), "UNKNOWN SHOP", new BigDecimal("-100"), "KZT", BankOperationType.PURCHASE, 0),
+                new ParsedTransaction(LocalDate.of(2026, 7, 14), "UNKNOWN SHOP", new BigDecimal("-200"), "KZT", BankOperationType.PURCHASE, 1)
+        )));
+        when(recognitionService.recognize("UNKNOWN SHOP")).thenReturn(notRecognized("UNKNOWN SHOP"));
+
+        StatementImportResult result = useCase(parser, recognitionService, new RecordingStatementCatalog(false), transactionCatalog)
+                .importStatement(new ByteArrayInputStream("missing".getBytes()), BankType.KASPI, "statement.pdf");
+
+        // Операция последнего дня периода не считается пропавшей: выписка могла быть выгружена до её проведения.
+        assertThat(result.operationsMissingFromStatement()).isEqualTo(1);
+        assertThat(transactionCatalog.savedTransactions).hasSize(2);
+    }
+
+    @Test
     void shouldNotCompareWithPreviousStatementsWhenAccountIsUnknown() {
         StatementParser parser = mock(StatementParser.class);
         MerchantRecognitionService recognitionService = mock(MerchantRecognitionService.class);

@@ -106,6 +106,7 @@ public class DefaultStatementImportUseCase {
                 importResult.unknownMerchants(),
                 importResult.withoutMerchantOperations(),
                 overlap.skippedDuplicates(),
+                overlap.missingFromNewStatement(),
                 statementPeriod.periodFrom(),
                 statementPeriod.periodTo()
         );
@@ -119,7 +120,7 @@ public class DefaultStatementImportUseCase {
             StatementPeriod statementPeriod
     ) {
         if (maskedAccountNumber == null) {
-            return new OverlappingOperationFilter.OverlapResult(parsedStatement.transactions(), 0);
+            return new OverlappingOperationFilter.OverlapResult(parsedStatement.transactions(), 0, 0);
         }
         return overlappingOperationFilter.filter(
                 parsedStatement.transactions(),
@@ -128,7 +129,9 @@ public class DefaultStatementImportUseCase {
                         maskedAccountNumber,
                         statementPeriod.periodFrom(),
                         statementPeriod.periodTo()
-                )
+                ),
+                statementPeriod.periodFrom(),
+                statementPeriod.periodTo()
         );
     }
 
