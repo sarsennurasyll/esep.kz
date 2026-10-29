@@ -45,7 +45,7 @@ class DashboardWebControllerTest {
                 new BigDecimal("101500"), new BigDecimal("95500"), new BigDecimal("0.6897"), new BigDecimal("0.5759")
         );
         when(analyticsWebApiClient.getMoneyFlowReport()).thenReturn(report);
-        when(analyticsWebApiClient.getMonthlyMoneyFlowReports()).thenReturn(List.of(new MonthlyMoneyFlowResponse("2026-08", report)));
+        when(analyticsWebApiClient.getMonthlyMoneyFlowReports()).thenReturn(List.of(new MonthlyMoneyFlowResponse("2026-08", report, false)));
 
         mockMvc.perform(get("/"))
                 .andExpect(status().isOk())
@@ -53,6 +53,7 @@ class DashboardWebControllerTest {
                 .andExpect(model().attributeExists("summary", "moneyFlow", "categories", "merchants", "monthlyMoneyFlow"))
                 .andExpect(content().string(containsString("2026-08")))
                 .andExpect(content().string(containsString("69")))
+                .andExpect(content().string(containsString("неполный")))
                 .andExpect(content().string(containsString("\"month\":\"2026-08\",\"report\":{")))
                 .andExpect(content().string(containsString("Движение денег")))
                 .andExpect(content().string(containsString("Назначение неизвестно")));

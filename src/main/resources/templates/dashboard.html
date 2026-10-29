@@ -38,7 +38,7 @@
             <thead><tr><th>Месяц</th><th class="text-end">Доход</th><th class="text-end">Расходы</th><th class="text-end">Наличные</th><th class="text-end">Свои деньги</th><th class="text-end">Неизвестно: поступления / списания</th></tr></thead>
             <tbody>
             <tr th:each="item : ${monthlyMoneyFlow}">
-                <td th:text="${item.month}"></td>
+                <td><span th:text="${item.month}"></span> <span th:unless="${item.complete}" class="badge text-bg-light border" title="Выписки покрывают не все дни месяца">неполный</span></td>
                 <td class="text-end amount-income" th:text="${item.report.income}"></td>
                 <td class="text-end amount-expense" th:text="${item.report.expense}"></td>
                 <td class="text-end" th:text="${item.report.cashWithdrawals}"></td>
@@ -81,7 +81,7 @@
     });
     new Chart(document.getElementById('monthlyChart'), {
         type: 'bar',
-        data: {labels: monthly.map(item => item.month), datasets: [
+        data: {labels: monthly.map(item => item.complete ? item.month : item.month + ' (неполный)'), datasets: [
             {label: 'Доход, отмеченный вами', data: monthly.map(item => item.report.income), backgroundColor: '#2f855a'},
             {label: 'Расходы на покупки', data: monthly.map(item => item.report.expense), backgroundColor: '#e53e3e'},
             {label: 'Наличные', data: monthly.map(item => item.report.cashWithdrawals), backgroundColor: '#d69e2e'},

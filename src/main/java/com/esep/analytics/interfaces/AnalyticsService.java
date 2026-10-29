@@ -1,5 +1,6 @@
 package com.esep.analytics.interfaces;
 
+import com.esep.analytics.model.MonthlyMoneyFlow;
 import com.esep.analytics.model.AnalyticsSummary;
 import com.esep.analytics.model.CategoryOperationCount;
 import com.esep.analytics.model.CategoryExpense;
@@ -9,7 +10,6 @@ import com.esep.analytics.model.MonthlyAnalytics;
 import com.esep.analytics.model.PersonTransfer;
 
 import com.esep.moneyflow.model.MoneyFlowReport;
-import com.esep.moneyflow.model.MonthlyMoneyFlowReport;
 
 import java.util.List;
 
@@ -34,5 +34,5 @@ public interface AnalyticsService {
 
     MoneyFlowReport getMoneyFlowReport();
 
-    List<MonthlyMoneyFlowReport> getMonthlyMoneyFlowReports();
+    List<MonthlyMoneyFlow> getMonthlyMoneyFlowReports();
 }
