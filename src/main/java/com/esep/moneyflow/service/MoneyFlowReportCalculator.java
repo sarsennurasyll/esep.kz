@@ -4,11 +4,17 @@ import com.esep.moneyflow.model.MoneyFlowReport;
 import com.esep.moneyflow.model.MoneyFlowTotal;
 import com.esep.moneyflow.model.MoneyFlowType;
 import com.esep.moneyflow.model.MoneyPurpose;
+import com.esep.moneyflow.model.MonthlyMoneyFlowReport;
+import com.esep.moneyflow.model.MonthlyMoneyFlowTotal;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 
 /**
  * Строит отчёт о движении денег по правилам ADR-0003. Решение пользователя о назначении важнее
@@ -29,6 +35,15 @@ public class MoneyFlowReportCalculator {
         Accumulator report = new Accumulator();
         totals.forEach(report::add);
         return report.toReport();
+    }
+
+    /** Отчёт по каждому месяцу, в котором есть операции, в хронологическом порядке. */
+    public List<MonthlyMoneyFlowReport> calculateMonthly(List<MonthlyMoneyFlowTotal> totals) {
+        Map<YearMonth, List<MoneyFlowTotal>> byMonth = new TreeMap<>();
+        totals.forEach(total -> byMonth.computeIfAbsent(total.month(), ignored -> new ArrayList<>()).add(total.total()));
+        return byMonth.entrySet().stream()
+                .map(entry -> new MonthlyMoneyFlowReport(entry.getKey(), calculate(entry.getValue())))
+                .toList();
     }
 
     private static final class Accumulator {

@@ -9,6 +9,7 @@ import com.esep.analytics.model.MonthlyAnalytics;
 import com.esep.analytics.model.PersonTransfer;
 
 import com.esep.moneyflow.model.MoneyFlowTotal;
+import com.esep.moneyflow.model.MonthlyMoneyFlowTotal;
 
 import java.util.List;
 
@@ -32,4 +33,6 @@ public interface AnalyticsQuery {
     List<MonthlyAnalytics> getMonthlyAnalytics();
 
     List<MoneyFlowTotal> getMoneyFlowTotals();
+
+    List<MonthlyMoneyFlowTotal> getMonthlyMoneyFlowTotals();
 }

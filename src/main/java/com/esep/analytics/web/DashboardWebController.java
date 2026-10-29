@@ -25,7 +25,7 @@ public class DashboardWebController {
         model.addAttribute("merchants", analyticsWebApiClient.getTopMerchants());
         model.addAttribute("merchantTypes", analyticsWebApiClient.getMerchantTypeExpenses());
         model.addAttribute("people", analyticsWebApiClient.getTopPersonTransfers());
-        model.addAttribute("monthly", analyticsWebApiClient.getMonthlyAnalytics());
+        model.addAttribute("monthlyMoneyFlow", analyticsWebApiClient.getMonthlyMoneyFlowReports());
         return "dashboard";
     }
 }

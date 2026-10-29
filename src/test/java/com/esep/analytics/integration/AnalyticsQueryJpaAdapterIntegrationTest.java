@@ -158,10 +158,27 @@ class AnalyticsQueryJpaAdapterIntegrationTest {
         );
     }
 
+    @Test
+    void shouldGroupMoneyFlowTotalsByCalendarMonth() {
+        Statement statement = statement("y");
+        flowTransaction(statement, MoneyFlowType.PURCHASE, MoneyPurpose.UNKNOWN, "-100.00", "m", LocalDate.of(2026, 7, 31));
+        flowTransaction(statement, MoneyFlowType.PURCHASE, MoneyPurpose.UNKNOWN, "-50.00", "n", LocalDate.of(2026, 8, 1));
+        flowTransaction(statement, MoneyFlowType.PURCHASE, MoneyPurpose.UNKNOWN, "-25.00", "o", LocalDate.of(2026, 8, 20));
+        entityManager.flush();
+
+        assertThat(analyticsQuery.getMonthlyMoneyFlowTotals())
+                .extracting(total -> total.month() + ":" + total.total().outflow().stripTrailingZeros().toPlainString() + ":" + total.total().operationCount())
+                .containsExactly("2026-07:100:1", "2026-08:75:2");
+    }
+
     private void flowTransaction(Statement statement, MoneyFlowType flowType, MoneyPurpose purpose, String amount, String fingerprintCharacter) {
+        flowTransaction(statement, flowType, purpose, amount, fingerprintCharacter, LocalDate.of(2026, 8, 2));
+    }
+
+    private void flowTransaction(Statement statement, MoneyFlowType flowType, MoneyPurpose purpose, String amount, String fingerprintCharacter, LocalDate date) {
         entityManager.persist(Transaction.builder()
                 .statement(statement)
-                .transactionDate(LocalDate.of(2026, 8, 2))
+                .transactionDate(date)
                 .amount(new BigDecimal(amount))
                 .currency("KZT")
                 .description("Operation " + fingerprintCharacter)
