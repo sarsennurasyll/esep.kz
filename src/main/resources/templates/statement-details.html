@@ -55,6 +55,27 @@
         <tr th:if="${#lists.isEmpty(transactions)}"><td colspan="8" class="text-center text-secondary py-4">В этой выписке нет операций.</td></tr>
         </tbody>
     </table></div></div>
+
+    <div th:if="${deletionPlan != null}" class="card border-danger mt-4"><div class="card-body">
+        <h2 class="h5">Удалить выписку</h2>
+        <p class="mb-2">Будут удалены операции: <strong th:text="${deletionPlan.operationCount}">0</strong>, вместе с назначениями, которые вы выбрали для них вручную. Отменить удаление нельзя.</p>
+        <p th:if="${deletionPlan.includesOtherStatements()}" class="mb-2">
+            Вместе с этой выпиской будут удалены выписки
+            <th:block th:each="otherId, state : ${deletionPlan.statementIds}" th:if="${otherId != statement.id}">
+                <a th:href="@{/statements/{id}(id=${otherId})}" th:text="'№' + ${otherId}"></a>
+            </th:block>:
+            они загружены позже за пересекающийся период этой же карты, и общие операции хранятся только в этой выписке.
+        </p>
+        <p class="small text-secondary">Правила назначения контрагентов и база продавцов не удаляются.</p>
+        <form th:action="@{/statements/{id}/delete(id=${statement.id})}" method="post">
+            <input th:each="deletedId : ${deletionPlan.statementIds}" type="hidden" name="statementIds" th:value="${deletedId}">
+            <div class="form-check mb-2">
+                <input class="form-check-input" type="checkbox" id="confirmDeletion" required>
+                <label class="form-check-label" for="confirmDeletion">Понимаю, что удаление нельзя отменить</label>
+            </div>
+            <button class="btn btn-outline-danger" type="submit">Удалить</button>
+        </form>
+    </div></div>
 </main>
 </body>
 </html>
