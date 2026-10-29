@@ -19,6 +19,19 @@ import java.util.Map;
 class OverlappingOperationFilter {
 
     OverlapResult filter(List<ParsedTransaction> transactions, List<ExistingOperationKey> existingOperations) {
+        return filter(transactions, existingOperations, null, null);
+    }
+
+    /**
+     * @param periodFrom первый день новой выписки; операции этого дня не считаются пропавшими
+     * @param periodTo последний день новой выписки; выписка за период, заканчивающийся сегодня, может не содержать поздних операций дня
+     */
+    OverlapResult filter(
+            List<ParsedTransaction> transactions,
+            List<ExistingOperationKey> existingOperations,
+            LocalDate periodFrom,
+            LocalDate periodTo
+    ) {
         Map<Key, Integer> remainingExisting = new HashMap<>();
         for (ExistingOperationKey existing : existingOperations) {
             remainingExisting.merge(
@@ -40,10 +53,19 @@ class OverlappingOperationFilter {
                 newTransactions.add(transaction);
             }
         }
-        return new OverlapResult(newTransactions, skipped);
+        // Остаток — операции, которые есть в прежних выписках за общий период, но отсутствуют в новой.
+        // Их не удаляют: пользователь видит число и сам решает, какой выписке верить (ADR-0004).
+        int missing = remainingExisting.entrySet().stream()
+                .filter(entry -> !entry.getKey().date().equals(periodFrom) && !entry.getKey().date().equals(periodTo))
+                .mapToInt(Map.Entry::getValue)
+                .sum();
+        return new OverlapResult(newTransactions, skipped, missing);
     }
 
-    record OverlapResult(List<ParsedTransaction> newTransactions, int skippedDuplicates) {
+    /**
+     * @param missingFromNewStatement операции прежних выписок за общий период, которых нет в новой, без граничных дней
+     */
+    record OverlapResult(List<ParsedTransaction> newTransactions, int skippedDuplicates, int missingFromNewStatement) {
 
         OverlapResult {
             newTransactions = List.copyOf(newTransactions);

@@ -48,6 +48,7 @@ public class StatementWebController {
     ) {
         try {
             StatementImportResponse result = statementWebApiClient.importStatement(file, bankType);
+            redirectAttributes.addFlashAttribute("importReport", result);
             return "redirect:/statements/" + result.statementId();
         } catch (StatementApiException exception) {
             redirectAttributes.addFlashAttribute("importError", importErrorMessage(exception));

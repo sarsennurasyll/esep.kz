@@ -4,12 +4,15 @@ import com.esep.merchantrecognition.interfaces.MerchantRecognitionService;
 import com.esep.statementimport.interfaces.StatementImporter;
 import com.esep.statementimport.model.ImportResult;
 import com.esep.statementimport.model.ParsedStatement;
+import com.esep.statementimport.model.ParsedTransaction;
 
 import java.util.List;
 import java.util.Objects;
 
 /**
  * Обрабатывает операции распарсенной выписки через сервис распознавания продавцов.
+ * Единственная точка обработки операций при импорте: сценарий импорта и статистика результата
+ * используют один и тот же {@link TransactionImportProcessor}.
  */
 public class DefaultStatementImporter implements StatementImporter {
 
@@ -19,7 +22,7 @@ public class DefaultStatementImporter implements StatementImporter {
         this(new TransactionImportProcessor(merchantRecognitionService));
     }
 
-    DefaultStatementImporter(TransactionImportProcessor transactionImportProcessor) {
+    public DefaultStatementImporter(TransactionImportProcessor transactionImportProcessor) {
         this.transactionImportProcessor = transactionImportProcessor;
     }
 
@@ -27,11 +30,13 @@ public class DefaultStatementImporter implements StatementImporter {
     public ImportResult importStatement(ParsedStatement statement) {
         Objects.requireNonNull(statement, "Statement must not be null");
 
-        List<ProcessedTransaction> processedTransactions = statement.transactions().stream()
+        return createImportResult(process(statement.transactions()));
+    }
+
+    List<ProcessedTransaction> process(List<ParsedTransaction> transactions) {
+        return transactions.stream()
                 .map(transactionImportProcessor::process)
                 .toList();
-
-        return createImportResult(processedTransactions);
     }
 
     ImportResult createImportResult(List<ProcessedTransaction> processedTransactions) {

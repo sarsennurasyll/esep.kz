@@ -30,7 +30,6 @@ public class DefaultStatementImportUseCase {
 
     private final StatementParserRegistry statementParserRegistry;
     private final DefaultStatementImporter statementImporter;
-    private final TransactionImportProcessor transactionImportProcessor;
     private final TransactionFingerprintGenerator transactionFingerprintGenerator;
     private final StatementPeriodResolver statementPeriodResolver;
     private final MoneyFlowClassifierRegistry moneyFlowClassifierRegistry;
@@ -42,7 +41,6 @@ public class DefaultStatementImportUseCase {
     public DefaultStatementImportUseCase(
             StatementParserRegistry statementParserRegistry,
             DefaultStatementImporter statementImporter,
-            TransactionImportProcessor transactionImportProcessor,
             TransactionFingerprintGenerator transactionFingerprintGenerator,
             StatementPeriodResolver statementPeriodResolver,
             MoneyFlowClassifierRegistry moneyFlowClassifierRegistry,
@@ -52,7 +50,6 @@ public class DefaultStatementImportUseCase {
     ) {
         this.statementParserRegistry = statementParserRegistry;
         this.statementImporter = statementImporter;
-        this.transactionImportProcessor = transactionImportProcessor;
         this.transactionFingerprintGenerator = transactionFingerprintGenerator;
         this.statementPeriodResolver = statementPeriodResolver;
         this.moneyFlowClassifierRegistry = moneyFlowClassifierRegistry;
@@ -80,9 +77,7 @@ public class DefaultStatementImportUseCase {
                 maskedAccountNumber,
                 statementPeriod
         );
-        List<ProcessedTransaction> processedTransactions = overlap.newTransactions().stream()
-                .map(transactionImportProcessor::process)
-                .toList();
+        List<ProcessedTransaction> processedTransactions = statementImporter.process(overlap.newTransactions());
 
         Long statementId = statementCatalog.save(toStatementCommand(
                 maskedAccountNumber,
@@ -106,6 +101,7 @@ public class DefaultStatementImportUseCase {
                 importResult.unknownMerchants(),
                 importResult.withoutMerchantOperations(),
                 overlap.skippedDuplicates(),
+                overlap.missingFromNewStatement(),
                 statementPeriod.periodFrom(),
                 statementPeriod.periodTo()
         );
@@ -119,7 +115,7 @@ public class DefaultStatementImportUseCase {
             StatementPeriod statementPeriod
     ) {
         if (maskedAccountNumber == null) {
-            return new OverlappingOperationFilter.OverlapResult(parsedStatement.transactions(), 0);
+            return new OverlappingOperationFilter.OverlapResult(parsedStatement.transactions(), 0, 0);
         }
         return overlappingOperationFilter.filter(
                 parsedStatement.transactions(),
@@ -128,7 +124,9 @@ public class DefaultStatementImportUseCase {
                         maskedAccountNumber,
                         statementPeriod.periodFrom(),
                         statementPeriod.periodTo()
-                )
+                ),
+                statementPeriod.periodFrom(),
+                statementPeriod.periodTo()
         );
     }
 

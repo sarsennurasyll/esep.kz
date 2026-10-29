@@ -64,6 +64,27 @@ class OverlappingOperationFilterTest {
         assertThat(result.skippedDuplicates()).isEqualTo(1);
     }
 
+    @Test
+    void shouldCountOperationsMissingFromNewStatementExceptBoundaryDays() {
+        LocalDate first = DAY.minusDays(1);
+        LocalDate last = DAY.plusDays(1);
+        var result = filter.filter(
+                List.of(parsed("-1000", "TEST STORE", 0)),
+                List.of(
+                        existing("-1000", "TEST STORE"),
+                        existing("-1000", "TEST STORE"),
+                        existing("-500", "OTHER STORE"),
+                        new ExistingOperationKey(first, new BigDecimal("-700"), BankOperationType.PURCHASE, "EARLY STORE"),
+                        new ExistingOperationKey(last, new BigDecimal("-900"), BankOperationType.PURCHASE, "LATE STORE")
+                ),
+                first,
+                last
+        );
+
+        assertThat(result.skippedDuplicates()).isEqualTo(1);
+        assertThat(result.missingFromNewStatement()).isEqualTo(2);
+    }
+
     private ParsedTransaction parsed(String amount, String description, int position) {
         return new ParsedTransaction(DAY, description, new BigDecimal(amount), "KZT", BankOperationType.PURCHASE, position);
     }
