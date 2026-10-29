@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Учётная запись')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navigation}"></nav>
+<main class="container pb-5">
+    <div class="row justify-content-center"><div class="col-md-7 col-lg-6">
+        <div class="card statement-card"><div class="card-body p-4">
+            <h1 class="h3 mb-3">Учётная запись</h1>
+            <dl class="row mb-4">
+                <dt class="col-sm-5">Электронная почта</dt><dd class="col-sm-7" th:text="${account.email}"></dd>
+                <dt class="col-sm-5">Создана</dt><dd class="col-sm-7" th:text="${#temporals.format(account.createdAt, 'dd.MM.yyyy')}"></dd>
+            </dl>
+            <form th:action="@{/logout}" method="post"><button class="btn btn-outline-secondary" type="submit">Выйти</button></form>
+        </div></div>
+    </div></div>
+</main>
+</body>
+</html>

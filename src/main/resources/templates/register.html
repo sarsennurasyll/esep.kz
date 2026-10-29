@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Регистрация')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navigation}"></nav>
+<main class="container pb-5">
+    <div class="row justify-content-center"><div class="col-md-7 col-lg-6">
+        <div class="card import-card"><div class="card-body p-4">
+            <h1 class="h3 mb-2">Регистрация</h1>
+            <p class="text-secondary">Учётная запись нужна для полного анализа: история выписок, ваши правила назначений, доход и расход по месяцам.
+                Храним только адрес почты и хеш пароля.</p>
+            <div th:if="${registerError}" class="alert alert-danger" th:text="${registerError}"></div>
+            <form th:action="@{/register}" method="post">
+                <div class="mb-3">
+                    <label for="email" class="form-label">Электронная почта</label>
+                    <input id="email" name="email" type="email" class="form-control" th:value="${email}" autocomplete="username" required>
+                </div>
+                <div class="mb-3">
+                    <label for="password" class="form-label">Пароль</label>
+                    <input id="password" name="password" type="password" class="form-control" minlength="10" autocomplete="new-password" required>
+                    <div class="form-text">Не короче 10 символов.</div>
+                </div>
+                <div class="mb-3">
+                    <label for="passwordConfirmation" class="form-label">Пароль ещё раз</label>
+                    <input id="passwordConfirmation" name="passwordConfirmation" type="password" class="form-control" minlength="10" autocomplete="new-password" required>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="consent" name="consent" value="true" required>
+                    <label class="form-check-label" for="consent">Я согласен с <a th:href="@{/privacy}">политикой конфиденциальности</a>.</label>
+                </div>
+                <button class="btn btn-primary w-100" type="submit">Зарегистрироваться</button>
+            </form>
+            <p class="small text-secondary mt-3 mb-0">Уже есть учётная запись? <a th:href="@{/login}">Войдите</a>.</p>
+        </div></div>
+    </div></div>
+</main>
+</body>
+</html>

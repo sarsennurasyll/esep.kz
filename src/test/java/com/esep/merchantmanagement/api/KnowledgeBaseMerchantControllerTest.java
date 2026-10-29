@@ -10,6 +10,7 @@ import com.esep.merchantmanagement.service.DefaultMerchantManagementService;
 import com.esep.merchantmanagement.service.KnowledgeBaseMerchantService;
 import com.esep.merchantresolver.model.MerchantReference;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -31,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(KnowledgeBaseMerchantController.class)
+@WithMockUser
 @Import(LocalSecurityConfiguration.class)
 class KnowledgeBaseMerchantControllerTest {
 
