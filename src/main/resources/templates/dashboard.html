@@ -32,9 +32,27 @@
         </tbody></table></div>
     </div></div>
 
+    <div class="card statement-card mb-4"><div class="card-body">
+        <h2 class="h5">По месяцам</h2>
+        <div class="table-responsive"><table class="table table-sm mb-0">
+            <thead><tr><th>Месяц</th><th class="text-end">Доход</th><th class="text-end">Расходы</th><th class="text-end">Наличные</th><th class="text-end">Свои деньги</th><th class="text-end">Неизвестно: поступления / списания</th></tr></thead>
+            <tbody>
+            <tr th:each="item : ${monthlyMoneyFlow}">
+                <td th:text="${item.month}"></td>
+                <td class="text-end amount-income" th:text="${item.report.income}"></td>
+                <td class="text-end amount-expense" th:text="${item.report.expense}"></td>
+                <td class="text-end" th:text="${item.report.cashWithdrawals}"></td>
+                <td class="text-end" th:text="${item.report.internalInflow}"></td>
+                <td class="text-end"><span th:text="${#numbers.formatPercent(item.report.unknownInflowShare, 1, 1)}"></span> / <span th:text="${#numbers.formatPercent(item.report.unknownOutflowShare, 1, 1)}"></span></td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(monthlyMoneyFlow)}"><td colspan="6" class="text-secondary">Пока нет операций.</td></tr>
+            </tbody>
+        </table></div>
+    </div></div>
+
     <div class="row g-4">
         <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Расходы по категориям</h2><canvas id="categoriesChart"></canvas></div></div></div>
-        <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Поступления и списания по месяцам</h2><canvas id="monthlyChart"></canvas></div></div></div>
+        <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Движение денег по месяцам</h2><canvas id="monthlyChart"></canvas></div></div></div>
         <div class="col-12"><div class="card statement-card"><div class="card-body"><h2 class="h5">Топ мест расходов</h2><canvas id="merchantsChart"></canvas></div></div></div>
         <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Расходы по типам получателей</h2><canvas id="merchantTypesChart"></canvas></div></div></div>
         <div class="col-lg-6"><div class="card statement-card h-100"><div class="card-body"><h2 class="h5">Топ переводов людям</h2><canvas id="peopleChart"></canvas></div></div></div>
@@ -53,7 +71,7 @@
     const merchants = /*[[${merchants}]]*/ [];
     const merchantTypes = /*[[${merchantTypes}]]*/ [];
     const people = /*[[${people}]]*/ [];
-    const monthly = /*[[${monthly}]]*/ [];
+    const monthly = /*[[${monthlyMoneyFlow}]]*/ [];
     const palette = ['#1d6a96', '#2f855a', '#d69e2e', '#805ad5', '#dd6b20', '#e53e3e', '#3182ce'];
 
     new Chart(document.getElementById('categoriesChart'), {
@@ -64,8 +82,10 @@
     new Chart(document.getElementById('monthlyChart'), {
         type: 'bar',
         data: {labels: monthly.map(item => item.month), datasets: [
-            {label: 'Доходы', data: monthly.map(item => item.income), backgroundColor: '#2f855a'},
-            {label: 'Расходы', data: monthly.map(item => item.expense), backgroundColor: '#e53e3e'}
+            {label: 'Доход, отмеченный вами', data: monthly.map(item => item.report.income), backgroundColor: '#2f855a'},
+            {label: 'Расходы на покупки', data: monthly.map(item => item.report.expense), backgroundColor: '#e53e3e'},
+            {label: 'Наличные', data: monthly.map(item => item.report.cashWithdrawals), backgroundColor: '#d69e2e'},
+            {label: 'Списания с неизвестным назначением', data: monthly.map(item => item.report.unknownOutflow), backgroundColor: '#a0aec0'}
         ]}, options: {responsive: true}
     });
     new Chart(document.getElementById('merchantsChart'), {

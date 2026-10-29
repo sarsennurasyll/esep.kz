@@ -8,7 +8,6 @@ import com.esep.analytics.api.dto.MerchantExpenseResponse;
 import com.esep.analytics.api.dto.MerchantTypeExpenseResponse;
 import com.esep.analytics.api.dto.MoneyFlowReportResponse;
 import com.esep.analytics.api.dto.MonthlyMoneyFlowResponse;
-import com.esep.analytics.api.dto.MonthlyAnalyticsResponse;
 import com.esep.analytics.api.dto.PersonTransferResponse;
 import org.springframework.stereotype.Component;
 
@@ -54,11 +53,6 @@ public class InProcessAnalyticsWebApiClient implements AnalyticsWebApiClient {
     @Override
     public List<PersonTransferResponse> getTopPersonTransfers() {
         return analyticsController.getTopPersonTransfers();
-    }
-
-    @Override
-    public List<MonthlyAnalyticsResponse> getMonthlyAnalytics() {
-        return analyticsController.getMonthlyAnalytics();
     }
 
     @Override
