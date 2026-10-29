@@ -14,6 +14,11 @@ import com.esep.merchantresolver.model.MerchantRecord;
 import com.esep.merchantresolver.model.MerchantReference;
 import com.esep.normalization.service.DefaultMerchantNormalizer;
 import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.any;
+import java.time.LocalDate;
+import java.math.BigDecimal;
+import com.esep.merchantmanagement.model.MerchantSummary;
 
 import java.util.List;
 import java.util.Optional;
@@ -45,6 +50,38 @@ class DefaultMerchantManagementServiceTest {
         assertThat(service.findUnknownDescriptions()).containsExactly(
                 new UnknownMerchantDescription("UNKNOWN SHOP", 5, " Unknown Shop ")
         );
+    }
+
+    @Test
+    void shouldLoadMerchantCatalogOnceForAllUnknownDescriptions() {
+        UnknownMerchantDescriptionQuery unknownQuery = () -> List.of(
+                new UnknownMerchantCandidate("TEST STORE ALMATY", 2, new BigDecimal("300"), LocalDate.of(2026, 8, 1), true),
+                new UnknownMerchantCandidate("test store  almaty", 1, new BigDecimal("200"), LocalDate.of(2026, 8, 5), false),
+                new UnknownMerchantCandidate("OTHER SHOP", 4, new BigDecimal("50"), LocalDate.of(2026, 7, 1), true)
+        );
+        MerchantReadQuery merchantReadQuery = mock(MerchantReadQuery.class);
+        when(merchantReadQuery.findAll()).thenReturn(List.of(
+                new MerchantSummary(new MerchantReference("7"), "TEST STORE", "Продукты")
+        ));
+        MerchantCatalog merchantCatalog = mock(MerchantCatalog.class);
+        MerchantAliasCatalog aliasCatalog = mock(MerchantAliasCatalog.class);
+        when(merchantCatalog.findByCanonicalName(any())).thenReturn(Optional.empty());
+        when(aliasCatalog.findByNormalizedAlias(any())).thenReturn(Optional.empty());
+        DefaultMerchantManagementService service = new DefaultMerchantManagementService(
+                unknownQuery, merchantReadQuery, merchantCatalog, aliasCatalog, command -> { }, new DefaultMerchantNormalizer());
+
+        List<UnknownMerchantDescription> descriptions = service.findUnknownDescriptions();
+
+        assertThat(descriptions).extracting(UnknownMerchantDescription::normalizedDescription)
+                .containsExactly("OTHER SHOP", "TEST STORE");
+        UnknownMerchantDescription merged = descriptions.get(1);
+        assertThat(merged.usageCount()).isEqualTo(3);
+        assertThat(merged.totalAmount()).isEqualByComparingTo("500");
+        assertThat(merged.lastTransactionDate()).isEqualTo(LocalDate.of(2026, 8, 5));
+        assertThat(merged.newInLatestStatement()).isFalse();
+        assertThat(merged.suggestion().displayName()).isEqualTo("TEST STORE");
+        verify(merchantReadQuery, times(1)).findAll();
+        verify(merchantCatalog, times(1)).findByCanonicalName("TEST STORE");
     }
 
     @Test

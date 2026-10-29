@@ -63,12 +63,15 @@ public class KnowledgeBaseWebController {
 
     @PostMapping("/{id}")
     public String updateMerchant(@PathVariable String id, @RequestParam String name, @RequestParam MerchantType merchantType,
-                                 @RequestParam String categoryCode, RedirectAttributes attributes) {
+                                 @RequestParam String categoryCode, @RequestParam(required = false) Long version,
+                                 RedirectAttributes attributes) {
         try {
-            knowledgeBaseApiClient.updateMerchant(id, new KnowledgeBaseMerchantRequest(name, merchantType, categoryCode));
+            knowledgeBaseApiClient.updateMerchant(id, new KnowledgeBaseMerchantRequest(name, merchantType, categoryCode, version));
             attributes.addFlashAttribute("successMessage", "Карточка продавца обновлена.");
         } catch (MerchantApiException exception) {
-            attributes.addFlashAttribute("errorMessage", "Не удалось обновить карточку продавца.");
+            attributes.addFlashAttribute("errorMessage", exception.getStatusCode() == 409
+                    ? "Карточку уже изменили в другом окне. Проверьте текущие данные и повторите правку."
+                    : "Не удалось обновить карточку продавца.");
         }
         return "redirect:/knowledge-base/merchants/" + id;
     }

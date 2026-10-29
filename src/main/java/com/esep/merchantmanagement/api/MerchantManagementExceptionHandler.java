@@ -4,8 +4,10 @@ import com.esep.common.api.ApiErrorResponse;
 import com.esep.merchantmanagement.exception.MerchantAliasAlreadyExistsException;
 import com.esep.merchantmanagement.exception.MerchantNotFoundException;
 import com.esep.merchantmanagement.exception.MerchantDeletionNotAllowedException;
+import com.esep.merchantmanagement.exception.MerchantVersionConflictException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -28,6 +30,12 @@ public class MerchantManagementExceptionHandler {
     @ExceptionHandler(MerchantDeletionNotAllowedException.class)
     ResponseEntity<ApiErrorResponse> handleMerchantDeletionNotAllowed(MerchantDeletionNotAllowedException exception) {
         return error(HttpStatus.CONFLICT, exception);
+    }
+
+    // Одно сообщение для обоих случаев: правки по устаревшей версии и одновременной записи двух запросов.
+    @ExceptionHandler({MerchantVersionConflictException.class, ObjectOptimisticLockingFailureException.class})
+    ResponseEntity<ApiErrorResponse> handleVersionConflict() {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiErrorResponse(new MerchantVersionConflictException().getMessage()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

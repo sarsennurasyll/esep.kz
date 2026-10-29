@@ -10,12 +10,13 @@ import java.util.List;
 public record KnowledgeBaseMerchantResponse(
         String id, String name, String normalizedName, MerchantType merchantType,
         String categoryCode, String categoryName, long transactionCount, BigDecimal totalAmount,
-        LocalDate firstTransactionDate, LocalDate lastTransactionDate, List<KnowledgeBaseAliasResponse> aliases
+        LocalDate firstTransactionDate, LocalDate lastTransactionDate, List<KnowledgeBaseAliasResponse> aliases,
+        long version
 ) {
     public static KnowledgeBaseMerchantResponse from(KnowledgeBaseMerchant merchant) {
         return new KnowledgeBaseMerchantResponse(merchant.merchantReference().value(), merchant.name(), merchant.normalizedName(),
                 merchant.merchantType(), merchant.categoryCode(), merchant.categoryName(), merchant.transactionCount(),
                 merchant.totalAmount(), merchant.firstTransactionDate(), merchant.lastTransactionDate(),
-                merchant.aliases().stream().map(KnowledgeBaseAliasResponse::from).toList());
+                merchant.aliases().stream().map(KnowledgeBaseAliasResponse::from).toList(), merchant.version());
     }
 }

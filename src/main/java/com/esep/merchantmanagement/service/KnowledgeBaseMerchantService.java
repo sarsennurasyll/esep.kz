@@ -6,6 +6,7 @@ import com.esep.entity.MerchantAlias;
 import com.esep.entity.MerchantType;
 import com.esep.merchantmanagement.exception.MerchantDeletionNotAllowedException;
 import com.esep.merchantmanagement.exception.MerchantNotFoundException;
+import com.esep.merchantmanagement.exception.MerchantVersionConflictException;
 import com.esep.merchantmanagement.model.KnowledgeBaseAlias;
 import com.esep.merchantmanagement.model.KnowledgeBaseAliasCommand;
 import com.esep.merchantmanagement.model.KnowledgeBaseMerchant;
@@ -15,13 +16,18 @@ import com.esep.normalization.interfaces.MerchantNormalizer;
 import com.esep.persistence.jpa.mapper.MerchantReferenceJpaMapper;
 import com.esep.persistence.jpa.repository.CategoryJpaRepository;
 import com.esep.persistence.jpa.repository.MerchantAliasJpaRepository;
+import com.esep.persistence.jpa.repository.MerchantActivityProjection;
 import com.esep.persistence.jpa.repository.MerchantJpaRepository;
 import com.esep.persistence.jpa.repository.TransactionJpaRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -42,14 +48,20 @@ public class KnowledgeBaseMerchantService {
 
     public List<KnowledgeBaseMerchant> findAll(String query, MerchantType merchantType, String categoryCode) {
         String term = query == null ? "" : query.trim().toUpperCase();
-        return merchants.findAllForKnowledgeBase().stream()
+        List<Merchant> found = merchants.findAllForKnowledgeBase().stream()
                 .filter(merchant -> merchantType == null || merchant.getMerchantType() == merchantType)
                 .filter(merchant -> categoryCode == null || categoryCode.isBlank() || merchant.getCategory().getCode().equals(categoryCode))
                 .filter(merchant -> term.isBlank() || matches(merchant, term))
-                .map(this::toModel).toList();
+                .toList();
+        // Статистика операций всех продавцов — одним агрегирующим запросом, а не пятью запросами на продавца.
+        Map<Long, MerchantActivityProjection> activity = activityOf(found);
+        return found.stream().map(merchant -> toModel(merchant, activity.get(merchant.getId()))).toList();
     }
 
-    public KnowledgeBaseMerchant findById(String reference) { return toModel(findMerchant(reference)); }
+    public KnowledgeBaseMerchant findById(String reference) {
+        Merchant merchant = findMerchant(reference);
+        return toModel(merchant, activityOf(List.of(merchant)).get(merchant.getId()));
+    }
 
     @Transactional
     public MerchantReference create(KnowledgeBaseMerchantCommand command) {
@@ -64,6 +76,9 @@ public class KnowledgeBaseMerchantService {
     @Transactional
     public void update(String reference, KnowledgeBaseMerchantCommand command) {
         Merchant merchant = findMerchant(reference);
+        if (command.expectedVersion() != null && command.expectedVersion() != merchant.getVersion()) {
+            throw new MerchantVersionConflictException();
+        }
         // Системный получатель уже имеет тип PERSON и остаётся редактируемым; новым записям этот тип не присваивается.
         if (merchant.getMerchantType() != command.merchantType()) requireAllowedInSharedKnowledgeBase(command.merchantType());
         String normalized = normalized(command.name());
@@ -120,11 +135,19 @@ public class KnowledgeBaseMerchantService {
     }
     private Category category(String code) { return categories.findByCode(code).orElseThrow(() -> new IllegalArgumentException("Category was not found")); }
     private String normalized(String value) { String result = normalizer.normalize(value).normalizedName(); if (result == null || result.isBlank()) throw new IllegalArgumentException("Name must not be blank"); return result; }
-    private KnowledgeBaseMerchant toModel(Merchant merchant) {
-        long count = transactions.countByMerchantId(merchant.getId()); BigDecimal total = transactions.sumAbsoluteAmountByMerchantId(merchant.getId());
+    private Map<Long, MerchantActivityProjection> activityOf(List<Merchant> found) {
+        if (found.isEmpty()) return Map.of();
+        return transactions.findMerchantActivity(found.stream().map(Merchant::getId).toList()).stream()
+                .collect(Collectors.toMap(MerchantActivityProjection::getMerchantId, Function.identity()));
+    }
+    private KnowledgeBaseMerchant toModel(Merchant merchant, MerchantActivityProjection activity) {
+        List<KnowledgeBaseAlias> merchantAliases = merchant.getAliases().stream()
+                .sorted(Comparator.comparing(MerchantAlias::getAliasName))
+                .map(alias -> new KnowledgeBaseAlias(alias.getId(), alias.getAliasName(), alias.getNormalizedAlias(), alias.isVerified())).toList();
         return new KnowledgeBaseMerchant(referenceMapper.toReference(merchant.getId()), merchant.getOriginalName(), merchant.getNormalizedName(), merchant.getMerchantType(),
-                merchant.getCategory().getCode(), merchant.getCategory().getName(), count, total == null ? BigDecimal.ZERO : total,
-                transactions.findFirstTransactionDateByMerchantId(merchant.getId()).orElse(null), transactions.findLastTransactionDateByMerchantId(merchant.getId()).orElse(null),
-                aliases.findAllByMerchantIdOrderByAliasNameAsc(merchant.getId()).stream().map(alias -> new KnowledgeBaseAlias(alias.getId(), alias.getAliasName(), alias.getNormalizedAlias(), alias.isVerified())).toList());
+                merchant.getCategory().getCode(), merchant.getCategory().getName(),
+                activity == null ? 0 : activity.getTransactionCount(), activity == null ? BigDecimal.ZERO : activity.getTotalAmount(),
+                activity == null ? null : activity.getFirstTransactionDate(), activity == null ? null : activity.getLastTransactionDate(),
+                merchantAliases, merchant.getVersion());
     }
 }

@@ -103,6 +103,6 @@ public class KnowledgeBaseMerchantController {
     }
 
     private KnowledgeBaseMerchantCommand command(KnowledgeBaseMerchantRequest request) {
-        return new KnowledgeBaseMerchantCommand(request.name(), request.merchantType(), request.categoryCode());
+        return new KnowledgeBaseMerchantCommand(request.name(), request.merchantType(), request.categoryCode(), request.version());
     }
 }

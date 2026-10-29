@@ -17,15 +17,17 @@ import com.esep.merchantresolver.interfaces.MerchantAliasCatalog;
 import com.esep.merchantresolver.interfaces.MerchantCatalog;
 import com.esep.merchantresolver.model.MerchantReference;
 import com.esep.normalization.interfaces.MerchantNormalizer;
-import org.springframework.stereotype.Service;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.math.BigDecimal;
-import java.time.LocalDate;
 
 /**
  * Реализует прикладной сценарий подтверждения неизвестных описаний операций.
@@ -82,37 +84,47 @@ public class DefaultMerchantManagementService implements MerchantManagementServi
         );
     }
 
+    /**
+     * Каталог продавцов загружается один раз на весь список, а не для каждого описания:
+     * подсказка ищется по всем продавцам и алиасам, и повторная загрузка давала O(описаний × каталог) запросов.
+     */
     @Override
     public List<UnknownMerchantDescription> findUnknownDescriptions() {
-        Map<String, UnknownMerchantDescription> descriptions = new LinkedHashMap<>();
+        Map<String, List<UnknownMerchantCandidate>> candidatesByDescription = new LinkedHashMap<>();
+        Map<String, Boolean> knownDescriptions = new HashMap<>();
 
         for (UnknownMerchantCandidate candidate : unknownMerchantDescriptionQuery.findAll()) {
             String normalizedDescription = merchantNormalizer.normalize(candidate.description()).normalizedName();
-            if (normalizedDescription == null || normalizedDescription.isBlank() || isKnown(normalizedDescription)) {
+            if (normalizedDescription == null || normalizedDescription.isBlank()
+                    || knownDescriptions.computeIfAbsent(normalizedDescription, this::isKnown)) {
                 continue;
             }
-
-            descriptions.merge(
-                    normalizedDescription,
-                    new UnknownMerchantDescription(normalizedDescription, candidate.usageCount(), candidate.totalAmount(),
-                            candidate.lastTransactionDate(), candidate.description(), candidate.newInLatestStatement(), suggestion(normalizedDescription)),
-                    (current, next) -> new UnknownMerchantDescription(
-                            current.normalizedDescription(),
-                            current.usageCount() + next.usageCount(),
-                            current.totalAmount().add(next.totalAmount()),
-                            current.lastTransactionDate().isAfter(next.lastTransactionDate()) ? current.lastTransactionDate() : next.lastTransactionDate(),
-                            current.exampleDescription(),
-                            current.newInLatestStatement() && next.newInLatestStatement(),
-                            current.suggestion()
-                    )
-            );
+            candidatesByDescription.computeIfAbsent(normalizedDescription, ignored -> new ArrayList<>()).add(candidate);
         }
 
-        return descriptions.values().stream()
-                .sorted(java.util.Comparator.comparingLong(UnknownMerchantDescription::usageCount).reversed()
-                        .thenComparing(UnknownMerchantDescription::totalAmount, java.util.Comparator.reverseOrder())
-                        .thenComparing(UnknownMerchantDescription::lastTransactionDate, java.util.Comparator.reverseOrder()))
+        List<MerchantSummary> merchants = candidatesByDescription.isEmpty() ? List.of() : merchantReadQuery.findAll();
+        return candidatesByDescription.entrySet().stream()
+                .map(entry -> toUnknownDescription(entry.getKey(), entry.getValue(), suggestion(entry.getKey(), merchants)))
+                .sorted(Comparator.comparingLong(UnknownMerchantDescription::usageCount).reversed()
+                        .thenComparing(UnknownMerchantDescription::totalAmount, Comparator.reverseOrder())
+                        .thenComparing(UnknownMerchantDescription::lastTransactionDate, Comparator.reverseOrder()))
                 .toList();
+    }
+
+    private static UnknownMerchantDescription toUnknownDescription(
+            String normalizedDescription,
+            List<UnknownMerchantCandidate> candidates,
+            MerchantSuggestion suggestion
+    ) {
+        return new UnknownMerchantDescription(
+                normalizedDescription,
+                candidates.stream().mapToLong(UnknownMerchantCandidate::usageCount).sum(),
+                candidates.stream().map(UnknownMerchantCandidate::totalAmount).reduce(BigDecimal.ZERO, BigDecimal::add),
+                candidates.stream().map(UnknownMerchantCandidate::lastTransactionDate).max(Comparator.naturalOrder()).orElseThrow(),
+                candidates.getFirst().description(),
+                candidates.stream().allMatch(UnknownMerchantCandidate::newInLatestStatement),
+                suggestion
+        );
     }
 
     @Override
@@ -154,8 +166,8 @@ public class DefaultMerchantManagementService implements MerchantManagementServi
                 || merchantAliasCatalog.findByNormalizedAlias(normalizedDescription).isPresent();
     }
 
-    private MerchantSuggestion suggestion(String normalizedDescription) {
-        return merchantReadQuery.findAll().stream()
+    private MerchantSuggestion suggestion(String normalizedDescription, List<MerchantSummary> merchants) {
+        return merchants.stream()
                 .filter(merchant -> sharesMeaningfulToken(normalizedDescription, merchant.displayName())
                         || merchant.aliases().stream().anyMatch(alias -> sharesMeaningfulToken(normalizedDescription, alias)))
                 .findFirst()
