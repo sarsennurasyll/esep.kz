@@ -4,13 +4,16 @@ import com.esep.analytics.model.MonthlyMoneyFlow;
 import com.esep.analytics.model.StatementCoverage;
 import com.esep.analytics.service.MonthCoverage;
 import com.esep.entity.BankType;
+import com.esep.merchantmanagement.interfaces.MerchantReadQuery;
 import com.esep.merchantrecognition.interfaces.MerchantRecognitionService;
+import com.esep.merchantresolver.model.MerchantMatch;
 import com.esep.moneyflow.model.MoneyFlowTotal;
 import com.esep.moneyflow.model.MoneyFlowType;
 import com.esep.moneyflow.model.MoneyPurpose;
 import com.esep.moneyflow.model.MonthlyMoneyFlowTotal;
 import com.esep.moneyflow.service.MoneyFlowClassifierRegistry;
 import com.esep.moneyflow.service.MoneyFlowReportCalculator;
+import com.esep.onetimecheck.model.CategorySpending;
 import com.esep.onetimecheck.model.OneTimeCheckReport;
 import com.esep.statementimport.interfaces.StatementParserRegistry;
 import com.esep.statementimport.model.ParsedStatement;
@@ -23,6 +26,8 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -36,22 +41,28 @@ import java.util.TreeMap;
 @Service
 public class OneTimeCheckService {
 
+    private static final String UNKNOWN_MERCHANT = "";
+    private static final String UNCATEGORIZED = "Без категории";
+
     private final StatementParserRegistry statementParserRegistry;
     private final StatementPeriodResolver statementPeriodResolver;
     private final MoneyFlowClassifierRegistry moneyFlowClassifierRegistry;
     private final MerchantRecognitionService merchantRecognitionService;
+    private final MerchantReadQuery merchantReadQuery;
     private final MoneyFlowReportCalculator calculator = new MoneyFlowReportCalculator();
 
     public OneTimeCheckService(
             StatementParserRegistry statementParserRegistry,
             StatementPeriodResolver statementPeriodResolver,
             MoneyFlowClassifierRegistry moneyFlowClassifierRegistry,
-            MerchantRecognitionService merchantRecognitionService
+            MerchantRecognitionService merchantRecognitionService,
+            MerchantReadQuery merchantReadQuery
     ) {
         this.statementParserRegistry = statementParserRegistry;
         this.statementPeriodResolver = statementPeriodResolver;
         this.moneyFlowClassifierRegistry = moneyFlowClassifierRegistry;
         this.merchantRecognitionService = merchantRecognitionService;
+        this.merchantReadQuery = merchantReadQuery;
     }
 
     public OneTimeCheckReport check(InputStream input, BankType bankType) {
@@ -61,17 +72,22 @@ public class OneTimeCheckService {
         Map<TotalKey, Totals> totals = new TreeMap<>();
         int purchasesWithMerchant = 0;
         int purchasesWithoutMerchant = 0;
+        Map<String, BigDecimal> spendingByMerchant = new HashMap<>();
         for (ParsedTransaction transaction : statement.transactions()) {
             MoneyFlowType flowType = moneyFlowClassifierRegistry.classify(
                     bankType, transaction.bankOperationType(), transaction.amount(), transaction.description()).flowType();
             totals.computeIfAbsent(new TotalKey(YearMonth.from(transaction.date()), flowType), ignored -> new Totals())
                     .add(transaction.amount());
             if (flowType == MoneyFlowType.PURCHASE || flowType == MoneyFlowType.PURCHASE_REFUND) {
-                if (merchantRecognitionService.recognize(transaction.description()).merchantMatch().matched()) {
+                MerchantMatch match = merchantRecognitionService.recognize(transaction.description()).merchantMatch();
+                if (match.matched()) {
                     purchasesWithMerchant++;
                 } else {
                     purchasesWithoutMerchant++;
                 }
+                // Покупка увеличивает траты, возврат уменьшает: amount у покупки отрицательный, у возврата положительный.
+                spendingByMerchant.merge(match.matched() ? match.merchantReference().value() : UNKNOWN_MERCHANT,
+                        transaction.amount().negate(), BigDecimal::add);
             }
         }
 
@@ -89,8 +105,25 @@ public class OneTimeCheckService {
                 calculator.calculate(monthlyTotals.stream().map(MonthlyMoneyFlowTotal::total).toList()),
                 monthly,
                 purchasesWithMerchant,
-                purchasesWithoutMerchant
+                purchasesWithoutMerchant,
+                categorySpending(spendingByMerchant)
         );
+    }
+
+    private List<CategorySpending> categorySpending(Map<String, BigDecimal> spendingByMerchant) {
+        Map<String, String> categoryByMerchant = new HashMap<>();
+        if (spendingByMerchant.keySet().stream().anyMatch(key -> !key.equals(UNKNOWN_MERCHANT))) {
+            merchantReadQuery.findAll().forEach(merchant ->
+                    categoryByMerchant.put(merchant.merchantReference().value(), merchant.categoryName()));
+        }
+        Map<String, BigDecimal> byCategory = new HashMap<>();
+        spendingByMerchant.forEach((merchant, amount) -> byCategory.merge(
+                categoryByMerchant.getOrDefault(merchant, UNCATEGORIZED), amount, BigDecimal::add));
+        return byCategory.entrySet().stream()
+                .filter(entry -> entry.getValue().signum() > 0)
+                .map(entry -> new CategorySpending(entry.getKey(), entry.getValue()))
+                .sorted(Comparator.comparing(CategorySpending::amount).reversed().thenComparing(CategorySpending::category))
+                .toList();
     }
 
     private record TotalKey(YearMonth month, MoneyFlowType flowType) implements Comparable<TotalKey> {

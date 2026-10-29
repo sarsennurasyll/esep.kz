@@ -27,6 +27,15 @@
         </tbody></table></div>
     </div></div>
 
+    <div class="card statement-card mb-4"><div class="card-body">
+        <h2 class="h5">Покупки по категориям</h2>
+        <p class="text-secondary small">За вычетом возвратов. Категория берётся из общей базы магазинов, сетей и ИП с торговым названием; остальные покупки — «Без категории».</p>
+        <div class="table-responsive"><table class="table table-sm mb-0"><tbody>
+            <tr th:each="spending : ${report.categorySpending}"><td th:text="${spending.category}"></td><td class="text-end" th:text="${spending.amount}"></td></tr>
+            <tr th:if="${#lists.isEmpty(report.categorySpending)}"><td class="text-secondary">В выписке нет покупок.</td></tr>
+        </tbody></table></div>
+    </div></div>
+
     <div class="card statement-card"><div class="card-body">
         <h2 class="h5">По месяцам</h2>
         <div class="table-responsive"><table class="table table-sm mb-0">

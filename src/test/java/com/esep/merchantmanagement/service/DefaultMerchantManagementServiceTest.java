@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -82,6 +83,42 @@ class DefaultMerchantManagementServiceTest {
         assertThat(merged.suggestion().displayName()).isEqualTo("TEST STORE");
         verify(merchantReadQuery, times(1)).findAll();
         verify(merchantCatalog, times(1)).findByCanonicalName("TEST STORE");
+    }
+
+    @Test
+    void shouldNotOfferPersonalEntrepreneurNamesForSharedKnowledgeBase() {
+        UnknownMerchantDescriptionQuery unknownQuery = () -> List.of(
+                new UnknownMerchantCandidate("ИП Тестов Т.", 4),
+                new UnknownMerchantCandidate("ИП Gamer", 2)
+        );
+        MerchantCatalog merchantCatalog = mock(MerchantCatalog.class);
+        MerchantAliasCatalog aliasCatalog = mock(MerchantAliasCatalog.class);
+        when(merchantCatalog.findByCanonicalName(any())).thenReturn(Optional.empty());
+        when(aliasCatalog.findByNormalizedAlias(any())).thenReturn(Optional.empty());
+
+        DefaultMerchantManagementService service = service(unknownQuery, merchantCatalog, aliasCatalog, command -> { });
+
+        assertThat(service.findUnknownDescriptions()).extracting(UnknownMerchantDescription::exampleDescription)
+                .containsExactly("ИП Gamer");
+    }
+
+    @Test
+    void shouldRefuseToMatchDescriptionWhoseOperationsNamePerson() {
+        MerchantReference merchantReference = new MerchantReference("42");
+        MerchantCatalog merchantCatalog = mock(MerchantCatalog.class);
+        MerchantAliasCatalog aliasCatalog = mock(MerchantAliasCatalog.class);
+        MerchantAliasMatchCatalog commandCatalog = mock(MerchantAliasMatchCatalog.class);
+        when(merchantCatalog.findByReference(merchantReference)).thenReturn(Optional.of(new MerchantRecord(merchantReference, "MAGNUM")));
+        when(aliasCatalog.findByNormalizedAlias(any())).thenReturn(Optional.empty());
+        MerchantTransactionBindingCatalog bindingCatalog = mock(MerchantTransactionBindingCatalog.class);
+        DefaultMerchantManagementService service = service(
+                () -> List.of(new UnknownMerchantCandidate("ИП Тестов", 3)),
+                merchantCatalog, aliasCatalog, commandCatalog, bindingCatalog
+        );
+
+        // После нормализации «ИП» отбрасывается, и «ТЕСТОВ» само по себе на фамилию не похоже — проверка идёт по операциям.
+        assertThatThrownBy(() -> service.match("ТЕСТОВ", merchantReference)).isInstanceOf(IllegalArgumentException.class);
+        verifyNoInteractions(commandCatalog, bindingCatalog);
     }
 
     @Test

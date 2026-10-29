@@ -83,6 +83,22 @@ class KnowledgeBasePrivacyIntegrationTest {
     }
 
     @Test
+    void shouldAcceptTradeNameEntrepreneurButRejectEntrepreneurNamedAfterPerson() {
+        MerchantReference gamer = knowledgeBaseMerchantService.create(
+                new KnowledgeBaseMerchantCommand("ИП Gamer", MerchantType.STORE, "GROCERY"));
+
+        assertThat(knowledgeBaseMerchantService.findById(gamer.value()).name()).isEqualTo("ИП Gamer");
+        assertThatThrownBy(() -> knowledgeBaseMerchantService.create(
+                new KnowledgeBaseMerchantCommand("ИП Тестов Т.", MerchantType.STORE, "GROCERY")))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> knowledgeBaseMerchantService.addAlias(reference(store), new KnowledgeBaseAliasCommand("ИП Тестова")))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> knowledgeBaseMerchantService.update(reference(store),
+                new KnowledgeBaseMerchantCommand("Тестов Т.", MerchantType.STORE, "GROCERY")))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
     void shouldRejectTurningOrganizationIntoPerson() {
         assertThatThrownBy(() -> knowledgeBaseMerchantService.update(
                 reference(store),

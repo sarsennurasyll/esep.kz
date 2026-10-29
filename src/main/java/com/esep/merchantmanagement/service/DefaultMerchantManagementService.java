@@ -8,6 +8,7 @@ import com.esep.merchantmanagement.interfaces.MerchantReadQuery;
 import com.esep.merchantmanagement.interfaces.MerchantTransactionBindingCatalog;
 import com.esep.merchantmanagement.interfaces.UnknownMerchantDescriptionQuery;
 import com.esep.merchantmanagement.model.MerchantAliasMatchCommand;
+import com.esep.merchantmanagement.policy.PersonalNameDetector;
 import com.esep.merchantmanagement.model.MerchantLearningStatistics;
 import com.esep.merchantmanagement.model.MerchantSuggestion;
 import com.esep.merchantmanagement.model.MerchantSummary;
@@ -94,6 +95,10 @@ public class DefaultMerchantManagementService implements MerchantManagementServi
         Map<String, Boolean> knownDescriptions = new HashMap<>();
 
         for (UnknownMerchantCandidate candidate : unknownMerchantDescriptionQuery.findAll()) {
+            // Имя человека (в том числе «ИП Фамилия И.») не предлагается для общей базы: связать его с продавцом нельзя.
+            if (PersonalNameDetector.looksLikePersonalName(candidate.description())) {
+                continue;
+            }
             String normalizedDescription = merchantNormalizer.normalize(candidate.description()).normalizedName();
             if (normalizedDescription == null || normalizedDescription.isBlank()
                     || knownDescriptions.computeIfAbsent(normalizedDescription, this::isKnown)) {
@@ -147,17 +152,22 @@ public class DefaultMerchantManagementService implements MerchantManagementServi
             throw new MerchantAliasAlreadyExistsException(normalizedAlias);
         }
 
-        merchantAliasMatchCatalog.save(new MerchantAliasMatchCommand(
-                normalizedAlias,
-                normalizedAlias,
-                merchantReference
-        ));
-
         List<String> matchingDescriptions = unknownMerchantDescriptionQuery.findAll().stream()
                 .map(UnknownMerchantCandidate::description)
                 .filter(description -> normalizedAlias.equals(merchantNormalizer.normalize(description).normalizedName()))
                 .distinct()
                 .toList();
+        // Нормализация убирает «ИП», поэтому имя человека проверяется и по исходным описаниям операций.
+        if (PersonalNameDetector.looksLikePersonalName(normalizedDescription)
+                || matchingDescriptions.stream().anyMatch(PersonalNameDetector::looksLikePersonalName)) {
+            throw new IllegalArgumentException("Private persons are not stored in the shared merchant knowledge base");
+        }
+
+        merchantAliasMatchCatalog.save(new MerchantAliasMatchCommand(
+                normalizedAlias,
+                normalizedAlias,
+                merchantReference
+        ));
         merchantTransactionBindingCatalog.bindUnknownTransactions(matchingDescriptions, merchantReference);
     }
 

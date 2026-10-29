@@ -78,7 +78,6 @@ class AnalyticsQueryJpaAdapterIntegrationTest {
         assertThat(analyticsQuery.getCategoryExpenses())
                 .extracting(expense -> expense.category() + ":" + expense.amount())
                 .containsExactly(
-                        "PERSONAL_TRANSFERS:500.00",
                         "UNCATEGORIZED:350.00",
                         "PHARMACY:200.00",
                         "GROCERY:100.00"
@@ -88,7 +87,6 @@ class AnalyticsQueryJpaAdapterIntegrationTest {
                 .containsExactlyInAnyOrder(
                         "UNCATEGORIZED:2",
                         "GROCERY:1",
-                        "PERSONAL_TRANSFERS:1",
                         "PHARMACY:1"
                 );
         assertThat(analyticsQuery.getTopMerchants())
