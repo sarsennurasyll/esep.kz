@@ -80,10 +80,15 @@ class PurposeLabelingPostgresIntegrationTest {
         service.setOperationPurpose(operationId, MoneyPurpose.DEBT);
         service.setRule("Тестова А.", MoneyDirection.INFLOW, MoneyPurpose.INCOME_WORK);
         String afterRule = jdbc.queryForObject("select purpose || ':' || purpose_source from transactions where id = ?", String.class, operationId);
+        var counterpartyOperations = service.findCounterpartyOperations("тестова а.", MoneyDirection.INFLOW);
         service.clearOperationPurpose(operationId);
         String afterClear = jdbc.queryForObject("select purpose || ':' || purpose_source from transactions where id = ?", String.class, operationId);
 
         assertThat(afterRule).isEqualTo("DEBT:USER");
         assertThat(afterClear).isEqualTo("INCOME_WORK:PERSONAL_RULE");
+        assertThat(counterpartyOperations).singleElement().satisfies(operation -> {
+            assertThat(operation.id()).isEqualTo(operationId);
+            assertThat(operation.purpose()).isEqualTo(MoneyPurpose.DEBT);
+        });
     }
 }

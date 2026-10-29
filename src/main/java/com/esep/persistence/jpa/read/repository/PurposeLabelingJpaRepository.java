@@ -2,6 +2,7 @@ package com.esep.persistence.jpa.read.repository;
 
 import com.esep.entity.Transaction;
 import com.esep.moneyflow.model.ClassificationSource;
+import com.esep.moneyflow.model.CounterpartyOperation;
 import com.esep.moneyflow.model.LabelableOperation;
 import com.esep.moneyflow.model.MoneyFlowType;
 import com.esep.moneyflow.model.MoneyPurpose;
@@ -26,6 +27,22 @@ public interface PurposeLabelingJpaRepository extends Repository<Transaction, Lo
             where transaction.id = :operationId
             """)
     Optional<LabelableOperation> findOperation(@Param("operationId") long operationId);
+
+    @Query("""
+            select new com.esep.moneyflow.model.CounterpartyOperation(
+                       transaction.id, transaction.statement.id, transaction.transactionDate, transaction.description,
+                       transaction.amount, transaction.purpose, transaction.purposeSource)
+            from Transaction transaction
+            where transaction.description in :descriptions
+              and transaction.flowType in :flowTypes
+              and ((:inflow = true and transaction.amount > 0) or (:inflow = false and transaction.amount < 0))
+            order by transaction.transactionDate desc, transaction.id desc
+            """)
+    List<CounterpartyOperation> findOperations(
+            @Param("descriptions") Collection<String> descriptions,
+            @Param("flowTypes") Collection<MoneyFlowType> flowTypes,
+            @Param("inflow") boolean inflow
+    );
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""

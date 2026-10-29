@@ -40,6 +40,15 @@ public class PurposeWebController {
         return "purposes";
     }
 
+    @GetMapping("/counterparty")
+    public String counterpartyOperations(@RequestParam String key, @RequestParam MoneyDirection direction, Model model) {
+        model.addAttribute("counterpartyKey", key);
+        model.addAttribute("direction", direction);
+        model.addAttribute("operations", purposeLabelingService.findCounterpartyOperations(key, direction));
+        model.addAttribute("purposeOptions", optionsFor(direction));
+        return "purpose-counterparty";
+    }
+
     @PostMapping("/rules")
     public String setRule(
             @RequestParam String counterpartyKey,
@@ -72,7 +81,9 @@ public class PurposeWebController {
     public String setOperationPurpose(
             @PathVariable long id,
             @RequestParam MoneyPurpose purpose,
-            @RequestParam long statementId,
+            @RequestParam(required = false) Long statementId,
+            @RequestParam(required = false) String counterpartyKey,
+            @RequestParam(required = false) MoneyDirection direction,
             RedirectAttributes attributes
     ) {
         try {
@@ -81,18 +92,40 @@ public class PurposeWebController {
         } catch (IllegalArgumentException | OperationNotFoundException exception) {
             attributes.addFlashAttribute("errorMessage", "Это назначение нельзя выбрать для операции.");
         }
-        return "redirect:/statements/" + statementId;
+        return returnTarget(statementId, counterpartyKey, direction, attributes);
     }
 
     @PostMapping("/operations/{id}/clear")
-    public String clearOperationPurpose(@PathVariable long id, @RequestParam long statementId, RedirectAttributes attributes) {
+    public String clearOperationPurpose(
+            @PathVariable long id,
+            @RequestParam(required = false) Long statementId,
+            @RequestParam(required = false) String counterpartyKey,
+            @RequestParam(required = false) MoneyDirection direction,
+            RedirectAttributes attributes
+    ) {
         try {
             purposeLabelingService.clearOperationPurpose(id);
             attributes.addFlashAttribute("successMessage", "Ручное назначение отменено: действует правило контрагента или «не знаю».");
         } catch (IllegalArgumentException | OperationNotFoundException exception) {
             attributes.addFlashAttribute("errorMessage", "Операция не найдена.");
         }
-        return "redirect:/statements/" + statementId;
+        return returnTarget(statementId, counterpartyKey, direction, attributes);
+    }
+
+    /**
+     * Возврат туда, откуда пришла форма: к выписке или к операциям контрагента. Адрес собирается только
+     * из числового id и параметров запроса, поэтому перенаправить на внешний сайт нельзя.
+     */
+    private String returnTarget(Long statementId, String counterpartyKey, MoneyDirection direction, RedirectAttributes attributes) {
+        if (statementId != null) {
+            return "redirect:/statements/" + statementId;
+        }
+        if (counterpartyKey != null && direction != null) {
+            attributes.addAttribute("key", counterpartyKey);
+            attributes.addAttribute("direction", direction);
+            return "redirect:/purposes/counterparty";
+        }
+        return "redirect:/purposes";
     }
 
     private List<MoneyPurpose> optionsFor(MoneyDirection direction) {

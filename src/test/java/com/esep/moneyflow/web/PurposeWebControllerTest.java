@@ -1,6 +1,8 @@
 package com.esep.moneyflow.web;
 
+import com.esep.moneyflow.model.ClassificationSource;
 import com.esep.moneyflow.model.CounterpartyLabelingItem;
+import com.esep.moneyflow.model.CounterpartyOperation;
 import com.esep.moneyflow.model.LabelingProgress;
 import com.esep.moneyflow.model.MoneyDirection;
 import com.esep.moneyflow.model.MoneyPurpose;
@@ -14,6 +16,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 import static org.hamcrest.Matchers.containsString;
@@ -51,6 +54,7 @@ class PurposeWebControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Тестов Т.")))
                 .andExpect(content().string(containsString("вручную: <span>1</span>")))
+                .andExpect(content().string(containsString("/purposes/counterparty?key=")))
                 .andExpect(content().string(containsString("value=\"FAMILY\"")))
                 .andExpect(content().string(not(containsString("value=\"INCOME_WORK\""))));
     }
@@ -82,6 +86,41 @@ class PurposeWebControllerTest {
     void shouldClearOperationPurpose() throws Exception {
         mockMvc.perform(post("/purposes/operations/7/clear").param("statementId", "42").with(csrf()))
                 .andExpect(redirectedUrl("/statements/42"));
+
+        verify(purposeLabelingService).clearOperationPurpose(7L);
+    }
+
+    @Test
+    void shouldRenderCounterpartyOperationsWithFormsReturningToThem() throws Exception {
+        when(purposeLabelingService.findCounterpartyOperations("ТЕСТОВ Т.", MoneyDirection.OUTFLOW)).thenReturn(List.of(new CounterpartyOperation(
+                7, 42, LocalDate.of(2026, 8, 2), "Тестов Т.", new BigDecimal("-5000"), MoneyPurpose.DEBT, ClassificationSource.USER
+        )));
+
+        mockMvc.perform(get("/purposes/counterparty").param("key", "ТЕСТОВ Т.").param("direction", "OUTFLOW"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("выбрано вручную")))
+                .andExpect(content().string(containsString("name=\"counterpartyKey\" value=\"ТЕСТОВ Т.\"")))
+                .andExpect(content().string(containsString("/statements/42")))
+                .andExpect(content().string(containsString("value=\"FAMILY\"")))
+                .andExpect(content().string(not(containsString("value=\"INCOME_WORK\""))));
+    }
+
+    @Test
+    void shouldReturnToCounterpartyOperationsAfterSettingPurpose() throws Exception {
+        mockMvc.perform(post("/purposes/operations/7")
+                        .param("purpose", "DEBT")
+                        .param("counterpartyKey", "ТЕСТОВ Т.")
+                        .param("direction", "OUTFLOW")
+                        .with(csrf()))
+                .andExpect(redirectedUrl("/purposes/counterparty?key=%D0%A2%D0%95%D0%A1%D0%A2%D0%9E%D0%92+%D0%A2.&direction=OUTFLOW"));
+
+        verify(purposeLabelingService).setOperationPurpose(7L, MoneyPurpose.DEBT);
+    }
+
+    @Test
+    void shouldReturnToPurposesWhenFormHasNoReturnTarget() throws Exception {
+        mockMvc.perform(post("/purposes/operations/7/clear").with(csrf()))
+                .andExpect(redirectedUrl("/purposes"));
 
         verify(purposeLabelingService).clearOperationPurpose(7L);
     }

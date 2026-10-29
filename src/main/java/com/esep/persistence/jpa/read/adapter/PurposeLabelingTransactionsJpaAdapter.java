@@ -3,6 +3,7 @@ package com.esep.persistence.jpa.read.adapter;
 import com.esep.moneyflow.interfaces.PurposeLabelingTransactions;
 import com.esep.moneyflow.model.ClassificationSource;
 import com.esep.moneyflow.model.CounterpartyActivity;
+import com.esep.moneyflow.model.CounterpartyOperation;
 import com.esep.moneyflow.model.LabelableOperation;
 import com.esep.moneyflow.model.MoneyDirection;
 import com.esep.moneyflow.model.MoneyFlowType;
@@ -51,6 +52,14 @@ public class PurposeLabelingTransactionsJpaAdapter implements PurposeLabelingTra
             return 0;
         }
         return repository.resetRulePurpose(descriptions, flowTypes, direction == MoneyDirection.INFLOW);
+    }
+
+    @Override
+    public List<CounterpartyOperation> findOperations(Collection<String> descriptions, MoneyDirection direction, Collection<MoneyFlowType> flowTypes) {
+        if (descriptions.isEmpty()) {
+            return List.of();
+        }
+        return repository.findOperations(descriptions, flowTypes, direction == MoneyDirection.INFLOW);
     }
 
     @Override

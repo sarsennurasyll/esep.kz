@@ -25,7 +25,7 @@
         <thead><tr><th>Контрагент</th><th>Направление</th><th class="text-end">Операций</th><th class="text-end">Сумма, ₸</th><th>Назначение</th></tr></thead>
         <tbody>
         <tr th:each="item : ${counterparties}">
-            <td><span th:text="${item.exampleDescription}"></span><div th:if="${item.manualOperationCount > 0}" class="small text-secondary">вручную: <span th:text="${item.manualOperationCount}">0</span> — правило к ним не применяется</div></td>
+            <td><a th:href="@{/purposes/counterparty(key=${item.counterpartyKey},direction=${item.direction})}" th:text="${item.exampleDescription}"></a><div th:if="${item.manualOperationCount > 0}" class="small text-secondary">вручную: <span th:text="${item.manualOperationCount}">0</span> — правило к ним не применяется</div></td>
             <td th:text="${item.direction.displayName}"></td>
             <td class="text-end" th:text="${item.operationCount}"></td>
             <td class="text-end" th:text="${item.amount}"></td>

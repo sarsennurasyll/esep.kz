@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Операции контрагента')}"></head>
+<body><nav th:replace="~{fragments/layout :: navigation}"></nav>
+<main class="container pb-5">
+    <a class="text-decoration-none" th:href="@{/purposes}">← Все контрагенты</a>
+    <div class="my-3">
+        <h1 class="h3 mb-1" th:text="${counterpartyKey}">Контрагент</h1>
+        <p class="text-secondary mb-0"><span th:text="${direction.displayName}"></span> · операций: <span th:text="${#lists.size(operations)}">0</span>.
+            Назначение, выбранное здесь для отдельной операции, важнее правила контрагента.</p>
+    </div>
+
+    <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+    <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+    <div th:if="${#lists.isEmpty(operations)}" class="alert alert-light border">У этого контрагента нет операций, назначение которых можно указать.</div>
+    <div th:unless="${#lists.isEmpty(operations)}" class="card statement-card"><div class="table-responsive"><table class="table table-hover align-middle mb-0">
+        <thead><tr><th>Дата</th><th>Описание</th><th class="text-end">Сумма, ₸</th><th>Назначение</th><th>Выписка</th></tr></thead>
+        <tbody>
+        <tr th:each="operation : ${operations}">
+            <td th:text="${operation.date}"></td>
+            <td th:text="${operation.description}"></td>
+            <td class="text-end fw-semibold" th:classappend="${operation.amount.signum() < 0 ? ' amount-expense' : ' amount-income'}" th:text="${operation.amount}"></td>
+            <td>
+                <form class="d-flex gap-1" th:action="@{/purposes/operations/{id}(id=${operation.id})}" method="post">
+                    <input type="hidden" name="counterpartyKey" th:value="${counterpartyKey}">
+                    <input type="hidden" name="direction" th:value="${direction}">
+                    <select class="form-select form-select-sm" name="purpose">
+                        <option th:each="purpose : ${purposeOptions}" th:value="${purpose}" th:text="${purpose.displayName}"
+                                th:selected="${purpose == operation.purpose}"></option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-primary" type="submit">OK</button>
+                </form>
+                <div class="small text-secondary mt-1">
+                    <span th:if="${operation.purposeSource.name() == 'USER'}">выбрано вручную</span>
+                    <span th:if="${operation.purposeSource.name() == 'PERSONAL_RULE'}">по правилу контрагента</span>
+                    <span th:if="${operation.purposeSource.name() == 'NONE'}">не знаю</span>
+                </div>
+                <form th:if="${operation.purposeSource.name() == 'USER'}"
+                      th:action="@{/purposes/operations/{id}/clear(id=${operation.id})}" method="post">
+                    <input type="hidden" name="counterpartyKey" th:value="${counterpartyKey}">
+                    <input type="hidden" name="direction" th:value="${direction}">
+                    <button class="btn btn-sm btn-link p-0" type="submit">Отменить ручной выбор</button>
+                </form>
+            </td>
+            <td><a th:href="@{/statements/{id}(id=${operation.statementId})}">открыть</a></td>
+        </tr>
+        </tbody>
+    </table></div></div>
+</main></body></html>

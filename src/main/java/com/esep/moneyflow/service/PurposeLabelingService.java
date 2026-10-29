@@ -7,6 +7,7 @@ import com.esep.moneyflow.interfaces.PurposeLabelingTransactions;
 import com.esep.moneyflow.model.ClassificationSource;
 import com.esep.moneyflow.model.CounterpartyActivity;
 import com.esep.moneyflow.model.CounterpartyLabelingItem;
+import com.esep.moneyflow.model.CounterpartyOperation;
 import com.esep.moneyflow.model.CounterpartyPurposeRule;
 import com.esep.moneyflow.model.LabelableOperation;
 import com.esep.moneyflow.model.LabelingProgress;
@@ -63,6 +64,16 @@ public class PurposeLabelingService implements MoneyPurposeResolver {
                 .map(entry -> entry.getValue().toItem(entry.getKey(), rules.get(entry.getKey())))
                 .sorted(Comparator.comparing(CounterpartyLabelingItem::amount).reversed())
                 .toList();
+    }
+
+    /** Операции контрагента в одном направлении: по ним видно, к каким применено правило, а какие размечены вручную. */
+    @Transactional(readOnly = true)
+    public List<CounterpartyOperation> findCounterpartyOperations(String counterpartyKey, MoneyDirection direction) {
+        String key = CounterpartyKeys.of(counterpartyKey);
+        if (key.isBlank()) {
+            return List.of();
+        }
+        return transactions.findOperations(descriptionsOf(key, direction), direction, LABELABLE_FLOWS);
     }
 
     @Transactional(readOnly = true)
