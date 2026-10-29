@@ -5,6 +5,7 @@ import com.esep.entity.BankType;
 import com.esep.persistence.model.ExistingOperationKey;
 import com.esep.entity.Transaction;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -17,6 +18,12 @@ import java.util.Optional;
 public interface TransactionJpaRepository extends JpaRepository<Transaction, Long> {
 
     long countByMerchantId(Long merchantId);
+
+    long countByStatementIdIn(Collection<Long> statementIds);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from Transaction transaction where transaction.statement.id in :statementIds")
+    int deleteByStatementIds(@Param("statementIds") Collection<Long> statementIds);
 
     List<Transaction> findByMerchantIsNullAndDescriptionInAndBankOperationTypeIn(
             Collection<String> descriptions,
