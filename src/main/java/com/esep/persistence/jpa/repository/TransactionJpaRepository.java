@@ -9,17 +9,27 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 
 public interface TransactionJpaRepository extends JpaRepository<Transaction, Long> {
 
     long countByMerchantId(Long merchantId);
 
     long countByStatementIdIn(Collection<Long> statementIds);
+
+    @Query("""
+            select transaction.merchant.id as merchantId,
+                   count(transaction) as transactionCount,
+                   coalesce(sum(abs(transaction.amount)), 0) as totalAmount,
+                   min(transaction.transactionDate) as firstTransactionDate,
+                   max(transaction.transactionDate) as lastTransactionDate
+            from Transaction transaction
+            where transaction.merchant.id in :merchantIds
+            group by transaction.merchant.id
+            """)
+    List<MerchantActivityProjection> findMerchantActivity(@Param("merchantIds") Collection<Long> merchantIds);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from Transaction transaction where transaction.statement.id in :statementIds")
@@ -29,15 +39,6 @@ public interface TransactionJpaRepository extends JpaRepository<Transaction, Lon
             Collection<String> descriptions,
             Collection<BankOperationType> bankOperationTypes
     );
-
-    @Query("select coalesce(sum(abs(transaction.amount)), 0) from Transaction transaction where transaction.merchant.id = :merchantId")
-    BigDecimal sumAbsoluteAmountByMerchantId(Long merchantId);
-
-    @Query("select min(transaction.transactionDate) from Transaction transaction where transaction.merchant.id = :merchantId")
-    Optional<LocalDate> findFirstTransactionDateByMerchantId(Long merchantId);
-
-    @Query("select max(transaction.transactionDate) from Transaction transaction where transaction.merchant.id = :merchantId")
-    Optional<LocalDate> findLastTransactionDateByMerchantId(Long merchantId);
 
     @Query("""
             select new com.esep.persistence.model.ExistingOperationKey(
