@@ -11,6 +11,7 @@ import com.esep.merchantmanagement.model.KnowledgeBaseAlias;
 import com.esep.merchantmanagement.model.KnowledgeBaseAliasCommand;
 import com.esep.merchantmanagement.model.KnowledgeBaseMerchant;
 import com.esep.merchantmanagement.model.KnowledgeBaseMerchantCommand;
+import com.esep.merchantmanagement.policy.PersonalNameDetector;
 import com.esep.merchantresolver.model.MerchantReference;
 import com.esep.normalization.interfaces.MerchantNormalizer;
 import com.esep.persistence.jpa.mapper.MerchantReferenceJpaMapper;
@@ -66,6 +67,7 @@ public class KnowledgeBaseMerchantService {
     @Transactional
     public MerchantReference create(KnowledgeBaseMerchantCommand command) {
         requireAllowedInSharedKnowledgeBase(command.merchantType());
+        requireNotPersonalName(command.name());
         String normalized = normalized(command.name());
         if (merchants.findByNormalizedName(normalized).isPresent()) throw new IllegalArgumentException("Merchant already exists");
         Merchant merchant = Merchant.builder().originalName(command.name().trim()).normalizedName(normalized)
@@ -81,6 +83,7 @@ public class KnowledgeBaseMerchantService {
         }
         // Системный получатель уже имеет тип PERSON и остаётся редактируемым; новым записям этот тип не присваивается.
         if (merchant.getMerchantType() != command.merchantType()) requireAllowedInSharedKnowledgeBase(command.merchantType());
+        if (merchant.getMerchantType().allowedInSharedKnowledgeBase()) requireNotPersonalName(command.name());
         String normalized = normalized(command.name());
         merchants.findByNormalizedName(normalized).filter(other -> !other.getId().equals(merchant.getId()))
                 .ifPresent(other -> { throw new IllegalArgumentException("Merchant already exists"); });
@@ -99,6 +102,7 @@ public class KnowledgeBaseMerchantService {
     @Transactional
     public Long addAlias(String reference, KnowledgeBaseAliasCommand command) {
         Merchant merchant = findMerchant(reference); requireAllowedInSharedKnowledgeBase(merchant.getMerchantType());
+        requireNotPersonalName(command.aliasName());
         String normalized = normalized(command.aliasName());
         if (aliases.findByNormalizedAlias(normalized).isPresent()) throw new IllegalArgumentException("Alias already exists");
         return aliases.save(MerchantAlias.builder().aliasName(command.aliasName().trim()).normalizedAlias(normalized).merchant(merchant).verified(true).build()).getId();
@@ -109,6 +113,7 @@ public class KnowledgeBaseMerchantService {
         MerchantAlias alias = aliases.findById(aliasId).filter(item -> item.getMerchant().getId().equals(findMerchant(reference).getId()))
                 .orElseThrow(() -> new IllegalArgumentException("Alias was not found"));
         requireAllowedInSharedKnowledgeBase(alias.getMerchant().getMerchantType());
+        requireNotPersonalName(command.aliasName());
         String normalized = normalized(command.aliasName());
         aliases.findByNormalizedAlias(normalized).filter(other -> !other.getId().equals(alias.getId()))
                 .ifPresent(other -> { throw new IllegalArgumentException("Alias already exists"); });
@@ -131,6 +136,10 @@ public class KnowledgeBaseMerchantService {
     private Merchant findMerchant(String reference) { MerchantReference ref = new MerchantReference(reference); return merchants.findById(referenceMapper.toMerchantId(ref)).orElseThrow(() -> new MerchantNotFoundException(ref)); }
     private void requireAllowedInSharedKnowledgeBase(MerchantType merchantType) {
         if (merchantType == null || !merchantType.allowedInSharedKnowledgeBase())
+            throw new IllegalArgumentException("Private persons are not stored in the shared merchant knowledge base");
+    }
+    private void requireNotPersonalName(String name) {
+        if (PersonalNameDetector.looksLikePersonalName(name))
             throw new IllegalArgumentException("Private persons are not stored in the shared merchant knowledge base");
     }
     private Category category(String code) { return categories.findByCode(code).orElseThrow(() -> new IllegalArgumentException("Category was not found")); }
