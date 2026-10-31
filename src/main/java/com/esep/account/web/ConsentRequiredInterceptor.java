@@ -30,7 +30,7 @@ public class ConsentRequiredInterceptor implements HandlerInterceptor, WebMvcCon
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(this).excludePathPatterns(
-                "/consent", "/privacy", "/terms", "/account", "/account/**", "/check", "/login", "/register", "/error", "/error/**", "/css/**", "/favicon.ico");
+                "/consent", "/privacy", "/terms", "/account", "/account/**", "/check", "/login", "/register", "/error", "/error/**", "/css/**", "/js/**", "/vendor/**", "/favicon.ico");
     }
 
     @Override

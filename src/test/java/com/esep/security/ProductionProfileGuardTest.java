@@ -7,13 +7,31 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class ProductionProfileGuardTest {
 
-    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-            .withUserConfiguration(ProductionProfileGuard.class, LocalSecurityConfiguration.class)
-            .withPropertyValues("esep.security.allowed-hosts=localhost");
+    private final ApplicationContextRunner production = new ApplicationContextRunner()
+            .withUserConfiguration(ProductionProfileGuard.class)
+            .withPropertyValues("spring.profiles.active=prod");
 
     @Test
-    void shouldRefuseToStartUnderProductionProfile() {
-        contextRunner.withPropertyValues("spring.profiles.active=prod")
+    void shouldStartWithProductionSettings() {
+        production.withPropertyValues("esep.security.allowed-hosts=esep.example.test", "spring.datasource.password=long-generated-value")
+                .run(context -> assertThat(context).hasNotFailed());
+    }
+
+    @Test
+    void shouldRefuseLocalHosts() {
+        production.withPropertyValues("esep.security.allowed-hosts=esep.example.test,localhost", "spring.datasource.password=long-generated-value")
+                .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
+    void shouldRefuseMissingHosts() {
+        production.withPropertyValues("spring.datasource.password=long-generated-value")
+                .run(context -> assertThat(context).hasFailed());
+    }
+
+    @Test
+    void shouldRefuseDevelopmentDatabasePassword() {
+        production.withPropertyValues("esep.security.allowed-hosts=esep.example.test", "spring.datasource.password=esep")
                 .run(context -> assertThat(context).hasFailed());
     }
 

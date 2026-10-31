@@ -20,6 +20,7 @@ import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
 import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
 import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.io.IOException;
@@ -44,8 +45,11 @@ public class LocalSecurityConfiguration {
 
     private static final Set<String> SAFE_METHODS = Set.of("GET", "HEAD", "OPTIONS", "TRACE");
     private static final String[] PUBLIC_PATHS = {
-            "/check", "/privacy", "/terms", "/login", "/register", "/css/**", "/favicon.ico", "/error", "/error/**"
+            "/check", "/privacy", "/terms", "/login", "/register", "/css/**", "/js/**", "/vendor/**", "/favicon.ico", "/error", "/error/**", "/actuator/health"
     };
+    // Все скрипты и стили свои: страницы с финансовыми данными не обращаются к внешним сайтам.
+    private static final String CONTENT_SECURITY_POLICY = "default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; "
+            + "font-src 'self'; connect-src 'self'; form-action 'self'; frame-ancestors 'none'; base-uri 'none'";
 
     @Bean
     LocalRequestOrigin localRequestOrigin(@Value("${esep.security.allowed-hosts}") List<String> allowedHosts) {
@@ -69,13 +73,22 @@ public class LocalSecurityConfiguration {
             LocalRequestOrigin localRequestOrigin,
             LoginAttemptLimiter loginAttemptLimiter
     ) throws Exception {
-        http
-                .addFilterBefore(new AllowedHostFilter(localRequestOrigin), CsrfFilter.class)
+        applyCommon(http, localRequestOrigin, loginAttemptLimiter)
+                .csrf(csrf -> csrf.requireCsrfProtectionMatcher(csrfRequired(localRequestOrigin)));
+        return http.build();
+    }
+
+    /** Правила, одинаковые для локального режима и Production: вход, доступ, заголовки. CSRF задаёт каждый профиль сам. */
+    static HttpSecurity applyCommon(HttpSecurity http, LocalRequestOrigin requestOrigin, LoginAttemptLimiter loginAttemptLimiter) throws Exception {
+        return http
+                .addFilterBefore(new AllowedHostFilter(requestOrigin), CsrfFilter.class)
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(PUBLIC_PATHS).permitAll()
                         .requestMatchers(sharedKnowledgeBaseChange()).hasRole("ADMIN")
                         .anyRequest().authenticated())
-                .csrf(csrf -> csrf.requireCsrfProtectionMatcher(csrfRequired(localRequestOrigin)))
+                .headers(headers -> headers
+                        .contentSecurityPolicy(policy -> policy.policyDirectives(CONTENT_SECURITY_POLICY))
+                        .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.NO_REFERRER)))
                 .formLogin(form -> form
                         .loginPage("/login")
                         .usernameParameter("email")
@@ -91,7 +104,6 @@ public class LocalSecurityConfiguration {
                 .logout(logout -> logout.logoutUrl("/logout").logoutSuccessUrl("/login?logout"))
                 .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint()))
                 .httpBasic(AbstractHttpConfigurer::disable);
-        return http.build();
     }
 
     // База продавцов общая для всех: одна правка обычного пользователя изменила бы результаты у остальных.

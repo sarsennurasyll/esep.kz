@@ -46,6 +46,15 @@ esep:
     max-pdf-parse-duration: ${ESEP_MAX_PDF_PARSE_DURATION:20s}
     max-pdf-memory: ${ESEP_MAX_PDF_MEMORY:64MB}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
 springdoc:
   api-docs:
     path: /api-docs

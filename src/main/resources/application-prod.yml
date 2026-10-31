@@ -1,0 +1,33 @@
+# Production и Staging (ADR-0011). Значений по умолчанию намеренно нет: без настройки сервис не запустится.
+server:
+  # Порт публикуется только во внутреннюю сеть контейнеров; снаружи доступен nginx.
+  address: 0.0.0.0
+  forward-headers-strategy: native
+  error:
+    include-message: never
+    include-stacktrace: never
+  servlet:
+    session:
+      timeout: 30m
+      cookie:
+        secure: true
+        http-only: true
+        same-site: lax
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  thymeleaf:
+    cache: true
+
+esep:
+  security:
+    allowed-hosts: ${ESEP_ALLOWED_HOSTS}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
