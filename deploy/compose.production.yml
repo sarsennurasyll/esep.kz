@@ -1,0 +1,74 @@
+# Staging и Production на одной ВМ (ADR-0005, ADR-0011). Запуск описан в deploy/README.md.
+name: esep
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: esep
+      POSTGRES_USER: esep
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks: [internal]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U esep -d esep"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    image: ${ESEP_IMAGE:-esep:local}
+    build:
+      context: ..
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/esep
+      DB_USERNAME: esep
+      DB_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      ESEP_ALLOWED_HOSTS: ${ESEP_DOMAIN:?ESEP_DOMAIN is required}
+      ESEP_ADMIN_EMAILS: ${ESEP_ADMIN_EMAILS:-}
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fs -H \"Host: $$ESEP_ALLOWED_HOSTS\" http://localhost:8080/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    networks: [internal, edge]
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      ESEP_DOMAIN: ${ESEP_DOMAIN:?ESEP_DOMAIN is required}
+    ports:
+      - "${ESEP_HTTP_PORT:-80}:80"
+      - "${ESEP_HTTPS_PORT:-443}:443"
+    volumes:
+      - ./nginx/esep.conf.template:/etc/nginx/templates/esep.conf.template:ro
+      # Staging закрывается файлом access-staging.conf, Production использует access-public.conf.
+      - ${ESEP_NGINX_ACCESS_FILE:-./nginx/access-public.conf}:/etc/nginx/esep-access.conf:ro
+      - ${ESEP_TLS_DIR:-/etc/letsencrypt}:/etc/letsencrypt:ro
+      - ${ESEP_ACME_DIR:-/var/www/certbot}:/var/www/certbot:ro
+    networks: [edge]
+
+volumes:
+  db_data:
+
+networks:
+  # База доступна только приложению и не публикует порт наружу.
+  internal:
+    internal: true
+  edge:

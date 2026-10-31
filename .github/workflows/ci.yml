@@ -26,6 +26,8 @@ jobs:
       # Тесты используют H2 и одноразовую PostgreSQL через Testcontainers; реальные выписки в CI не используются.
       - name: Test
         run: mvn -B -ntp test
+      - name: Build image
+        run: docker build -q -t esep:ci .
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4

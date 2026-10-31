@@ -4,3 +4,7 @@ target/
 *.iml
 .env
 .DS_Store
+
+# Настройки сервера
+deploy/.env
+deploy/nginx/access-staging.conf
