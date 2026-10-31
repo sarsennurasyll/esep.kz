@@ -5,6 +5,7 @@ import com.esep.moneyflow.model.MoneyPurpose;
 import com.esep.moneyflow.service.PurposeLabelingService;
 import com.esep.persistence.jpa.adapter.CounterpartyPurposeRuleCatalogJpaAdapter;
 import com.esep.persistence.jpa.read.adapter.PurposeLabelingTransactionsJpaAdapter;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -12,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -27,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import({PurposeLabelingService.class, CounterpartyPurposeRuleCatalogJpaAdapter.class, PurposeLabelingTransactionsJpaAdapter.class})
 @TestPropertySource(properties = {"spring.flyway.enabled=true", "spring.jpa.hibernate.ddl-auto=validate"})
 @Testcontainers(disabledWithoutDocker = true)
+@TestExecutionListeners(listeners = TestOwnerListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 class PurposeLabelingPostgresIntegrationTest {
 
     @Container
@@ -38,6 +41,11 @@ class PurposeLabelingPostgresIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbc;
+
+    @BeforeEach
+    void prepareOwner() {
+        TestOwnerListener.prepareOwner(jdbc);
+    }
 
     @Test
     void shouldApplyAndRemoveRuleOnPostgres() {

@@ -25,6 +25,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.TenantId;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -50,6 +51,11 @@ public class Transaction {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /** Владелец строки; задаётся и проверяется Hibernate, см. ADR-0009. */
+    @TenantId
+    @Column(name = "owner_id", updatable = false)
+    private Long ownerId;
 
     @NotNull
     @Column(nullable = false, precision = 19, scale = 2)

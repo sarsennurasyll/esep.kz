@@ -28,6 +28,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
+        tenant_identifier_resolver: com.esep.security.CurrentOwnerResolver
         jdbc:
           time_zone: UTC
 
@@ -35,6 +36,10 @@ esep:
   security:
     # Имена в заголовке Host, по которым разрешено обращаться к сервису.
     allowed-hosts: ${ESEP_ALLOWED_HOSTS:localhost,127.0.0.1}
+    # Адреса, которым разрешено менять общую базу продавцов (ADR-0009).
+    admin-emails: ${ESEP_ADMIN_EMAILS:}
+    # Учётная запись, которой при запуске передаются данные без владельца, созданные до ADR-0009.
+    legacy-data-owner-email: ${ESEP_LEGACY_DATA_OWNER_EMAIL:}
   import:
     max-pdf-pages: ${ESEP_MAX_PDF_PAGES:200}
     max-pdf-text-characters: ${ESEP_MAX_PDF_TEXT_CHARACTERS:2000000}

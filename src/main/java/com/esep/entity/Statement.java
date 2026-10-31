@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -19,6 +20,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.TenantId;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -29,7 +31,8 @@ import java.time.LocalDate;
 @Entity
 @Table(
         name = "statements",
-        indexes = @Index(name = "idx_statements_bank_period", columnList = "bank_name, period_from, period_to")
+        indexes = @Index(name = "idx_statements_bank_period", columnList = "bank_name, period_from, period_to"),
+        uniqueConstraints = @UniqueConstraint(name = "uk_statements_owner_source_file_hash", columnNames = {"owner_id", "source_file_hash"})
 )
 @Getter
 @Setter
@@ -41,6 +44,11 @@ public class Statement {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /** Владелец строки; задаётся и проверяется Hibernate, см. ADR-0009. */
+    @TenantId
+    @Column(name = "owner_id", updatable = false)
+    private Long ownerId;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -58,7 +66,7 @@ public class Statement {
 
     @NotBlank
     @Size(min = 64, max = 64)
-    @Column(nullable = false, unique = true, length = 64, updatable = false)
+    @Column(nullable = false, length = 64, updatable = false)
     private String sourceFileHash;
 
     @CreationTimestamp

@@ -94,7 +94,7 @@ public class KnowledgeBaseMerchantService {
     @Transactional
     public void delete(String reference) {
         Merchant merchant = findMerchant(reference);
-        if (transactions.countByMerchantId(merchant.getId()) > 0 || aliases.countByMerchantId(merchant.getId()) > 0)
+        if (transactions.countByMerchantIdOfAllOwners(merchant.getId()) > 0 || aliases.countByMerchantId(merchant.getId()) > 0)
             throw new MerchantDeletionNotAllowedException(referenceMapper.toReference(merchant.getId()));
         merchants.delete(merchant);
     }

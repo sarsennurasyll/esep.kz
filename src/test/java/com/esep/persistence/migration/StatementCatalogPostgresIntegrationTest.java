@@ -5,6 +5,7 @@ import com.esep.persistence.jpa.adapter.StatementCatalogJpaAdapter;
 import com.esep.persistence.jpa.mapper.StatementJpaMapper;
 import com.esep.persistence.model.StatementPersistenceCommand;
 import com.esep.statementimport.exception.StatementAlreadyImportedException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -12,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -30,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @Import({StatementCatalogJpaAdapter.class, StatementJpaMapper.class})
 @TestPropertySource(properties = {"spring.flyway.enabled=true", "spring.jpa.hibernate.ddl-auto=validate"})
 @Testcontainers(disabledWithoutDocker = true)
+@TestExecutionListeners(listeners = TestOwnerListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 class StatementCatalogPostgresIntegrationTest {
 
     @Container
@@ -41,6 +44,11 @@ class StatementCatalogPostgresIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbc;
+
+    @BeforeEach
+    void prepareOwner() {
+        TestOwnerListener.prepareOwner(jdbc);
+    }
 
     @Test
     void shouldReportDuplicateFileHashAsAlreadyImported() {
