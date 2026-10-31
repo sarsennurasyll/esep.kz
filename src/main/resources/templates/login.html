@@ -11,6 +11,7 @@
             <div th:if="${param.error}" class="alert alert-danger">Неверный адрес или пароль.</div>
             <div th:if="${param.locked}" class="alert alert-danger">Слишком много неудачных попыток. Попробуйте через 15 минут.</div>
             <div th:if="${param.logout}" class="alert alert-light border">Вы вышли из учётной записи.</div>
+            <div th:if="${param.deleted}" class="alert alert-light border">Учётная запись и все её данные удалены.</div>
             <form th:action="@{/login}" method="post">
                 <div class="mb-3">
                     <label for="email" class="form-label">Электронная почта</label>

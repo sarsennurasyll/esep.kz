@@ -1,11 +1,17 @@
 package com.esep.account.web;
 
+import com.esep.account.service.AccountDeletionService;
 import com.esep.account.service.AccountRegistrationException;
 import com.esep.account.service.AccountService;
+import com.esep.security.AccountPrincipal;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,10 +28,20 @@ public class AccountWebController {
     static final String CONSENT_REQUIRED = "Чтобы зарегистрироваться, подтвердите согласие с политикой конфиденциальности.";
     static final String PASSWORDS_DIFFER = "Пароли не совпадают.";
 
-    private final AccountService accountService;
+    static final String WRONG_PASSWORD = "Неверный пароль: учётная запись не удалена.";
 
-    public AccountWebController(AccountService accountService) {
+    private final AccountService accountService;
+    private final AccountDeletionService accountDeletionService;
+    private final PasswordEncoder passwordEncoder;
+
+    public AccountWebController(
+            AccountService accountService,
+            AccountDeletionService accountDeletionService,
+            PasswordEncoder passwordEncoder
+    ) {
         this.accountService = accountService;
+        this.accountDeletionService = accountDeletionService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping("/login")
@@ -68,6 +84,26 @@ public class AccountWebController {
     public String account(@AuthenticationPrincipal UserDetails user, Model model) {
         model.addAttribute("account", accountService.findByEmail(user.getUsername()).orElseThrow());
         return "account";
+    }
+
+    @PostMapping("/account/delete")
+    public String delete(
+            @AuthenticationPrincipal AccountPrincipal user,
+            @RequestParam String password,
+            Authentication authentication,
+            HttpServletRequest request,
+            HttpServletResponse response,
+            RedirectAttributes attributes
+    ) {
+        // В сессии хеш пароля стёрт после входа, поэтому он читается из базы.
+        String passwordHash = accountService.findByEmail(user.getUsername()).orElseThrow().getPasswordHash();
+        if (!passwordEncoder.matches(password, passwordHash)) {
+            attributes.addFlashAttribute("deleteError", WRONG_PASSWORD);
+            return "redirect:/account";
+        }
+        accountDeletionService.delete(user.accountId());
+        new SecurityContextLogoutHandler().logout(request, response, authentication);
+        return "redirect:/login?deleted";
     }
 
     private static String registerError(Model model, HttpServletResponse response, String message) {
