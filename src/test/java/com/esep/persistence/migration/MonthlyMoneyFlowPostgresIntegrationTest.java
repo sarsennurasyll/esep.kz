@@ -2,6 +2,7 @@ package com.esep.persistence.migration;
 
 import com.esep.analytics.interfaces.AnalyticsQuery;
 import com.esep.persistence.jpa.read.adapter.AnalyticsQueryJpaAdapter;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
@@ -9,6 +10,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.TestExecutionListeners;
 import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -24,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Import(AnalyticsQueryJpaAdapter.class)
 @TestPropertySource(properties = {"spring.flyway.enabled=true", "spring.jpa.hibernate.ddl-auto=validate"})
 @Testcontainers(disabledWithoutDocker = true)
+@TestExecutionListeners(listeners = TestOwnerListener.class, mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 class MonthlyMoneyFlowPostgresIntegrationTest {
 
     @Container
@@ -35,6 +38,11 @@ class MonthlyMoneyFlowPostgresIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbc;
+
+    @BeforeEach
+    void prepareOwner() {
+        TestOwnerListener.prepareOwner(jdbc);
+    }
 
     @Test
     void shouldGroupMoneyFlowByCalendarMonthOnPostgres() {

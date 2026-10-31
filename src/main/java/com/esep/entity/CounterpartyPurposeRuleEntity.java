@@ -21,6 +21,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.TenantId;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
@@ -46,6 +47,11 @@ public class CounterpartyPurposeRuleEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    /** Владелец строки; задаётся и проверяется Hibernate, см. ADR-0009. */
+    @TenantId
+    @Column(name = "owner_id", updatable = false)
+    private Long ownerId;
 
     @NotBlank
     @Size(max = 1_000)

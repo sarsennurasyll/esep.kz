@@ -29,7 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 @WebMvcTest(KnowledgeBaseWebController.class)
-@WithMockUser
+@WithMockUser(roles = "ADMIN")
 @Import(LocalSecurityConfiguration.class)
 class KnowledgeBaseWebControllerTest {
 

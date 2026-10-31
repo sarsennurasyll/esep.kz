@@ -73,6 +73,7 @@ public class LocalSecurityConfiguration {
                 .addFilterBefore(new AllowedHostFilter(localRequestOrigin), CsrfFilter.class)
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(PUBLIC_PATHS).permitAll()
+                        .requestMatchers(sharedKnowledgeBaseChange()).hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .csrf(csrf -> csrf.requireCsrfProtectionMatcher(csrfRequired(localRequestOrigin)))
                 .formLogin(form -> form
@@ -91,6 +92,16 @@ public class LocalSecurityConfiguration {
                 .exceptionHandling(exceptions -> exceptions.authenticationEntryPoint(authenticationEntryPoint()))
                 .httpBasic(AbstractHttpConfigurer::disable);
         return http.build();
+    }
+
+    // База продавцов общая для всех: одна правка обычного пользователя изменила бы результаты у остальных.
+    private static RequestMatcher sharedKnowledgeBaseChange() {
+        return request -> {
+            String path = request.getRequestURI().substring(request.getContextPath().length());
+            return !SAFE_METHODS.contains(request.getMethod())
+                    && (path.startsWith("/knowledge-base/") || path.startsWith("/api/knowledge-base/")
+                    || path.equals("/merchants/match") || path.equals("/api/merchants/match"));
+        };
     }
 
     // Без входа API отвечает 401, а страницы отправляют на форму входа — независимо от заголовка Accept.

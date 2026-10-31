@@ -15,7 +15,9 @@ import java.util.List;
 
 public interface TransactionJpaRepository extends JpaRepository<Transaction, Long> {
 
-    long countByMerchantId(Long merchantId);
+    // Обычный SQL намеренно обходит фильтр владельца: продавца из общей базы нельзя удалить, пока им пользуется кто угодно.
+    @Query(value = "select count(*) from transactions where merchant_id = :merchantId", nativeQuery = true)
+    long countByMerchantIdOfAllOwners(@Param("merchantId") Long merchantId);
 
     long countByStatementIdIn(Collection<Long> statementIds);
 

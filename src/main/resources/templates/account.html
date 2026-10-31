@@ -12,6 +12,17 @@
                 <dt class="col-sm-5">Создана</dt><dd class="col-sm-7" th:text="${#temporals.format(account.createdAt, 'dd.MM.yyyy')}"></dd>
             </dl>
             <form th:action="@{/logout}" method="post"><button class="btn btn-outline-secondary" type="submit">Выйти</button></form>
+            <hr class="my-4">
+            <h2 class="h5">Удалить учётную запись</h2>
+            <p class="text-secondary">Будут удалены учётная запись, все ваши выписки, операции и правила назначения. Отменить это нельзя.</p>
+            <div class="alert alert-danger" th:if="${deleteError}" th:text="${deleteError}"></div>
+            <form th:action="@{/account/delete}" method="post">
+                <div class="mb-3">
+                    <label class="form-label" for="delete-password">Пароль для подтверждения</label>
+                    <input class="form-control" id="delete-password" type="password" name="password" autocomplete="current-password" required>
+                </div>
+                <button class="btn btn-danger" type="submit">Удалить учётную запись и все данные</button>
+            </form>
         </div></div>
     </div></div>
 </main>
