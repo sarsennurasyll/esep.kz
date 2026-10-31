@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Предложенные названия')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navigation}"></nav>
+<main class="container pb-5">
+    <h1 class="h3 mb-2">Предложенные названия</h1>
+    <p class="text-secondary">Пользователи прислали их по согласию. Проверьте, что это организация, а не человек, и добавьте через <a th:href="@{/knowledge-base/merchants}">базу знаний</a>: добавленное название исчезнет из списка.</p>
+    <p th:if="${#lists.isEmpty(suggestions)}" class="text-secondary">Новых названий нет.</p>
+    <ul class="list-group" th:unless="${#lists.isEmpty(suggestions)}">
+        <li class="list-group-item d-flex justify-content-between align-items-center" th:each="name : ${suggestions}">
+            <span th:text="${name}"></span>
+            <form th:action="@{/knowledge-base/suggestions/reject}" method="post">
+                <input type="hidden" name="name" th:value="${name}">
+                <button class="btn btn-sm btn-outline-secondary" type="submit">Отклонить</button>
+            </form>
+        </li>
+    </ul>
+</main>
+</body>
+</html>

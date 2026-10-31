@@ -44,7 +44,7 @@ public class LocalSecurityConfiguration {
 
     private static final Set<String> SAFE_METHODS = Set.of("GET", "HEAD", "OPTIONS", "TRACE");
     private static final String[] PUBLIC_PATHS = {
-            "/check", "/privacy", "/login", "/register", "/css/**", "/favicon.ico", "/error", "/error/**"
+            "/check", "/privacy", "/terms", "/login", "/register", "/css/**", "/favicon.ico", "/error", "/error/**"
     };
 
     @Bean
@@ -98,7 +98,7 @@ public class LocalSecurityConfiguration {
     private static RequestMatcher sharedKnowledgeBaseChange() {
         return request -> {
             String path = request.getRequestURI().substring(request.getContextPath().length());
-            return !SAFE_METHODS.contains(request.getMethod())
+            return path.startsWith("/knowledge-base/suggestions") || !SAFE_METHODS.contains(request.getMethod())
                     && (path.startsWith("/knowledge-base/") || path.startsWith("/api/knowledge-base/")
                     || path.equals("/merchants/match") || path.equals("/api/merchants/match"));
         };

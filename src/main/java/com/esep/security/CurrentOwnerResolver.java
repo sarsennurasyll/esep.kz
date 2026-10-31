@@ -1,8 +1,6 @@
 package com.esep.security;
 
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 /**
  * Сообщает Hibernate владельца личных данных (ADR-0009): все запросы к сущностям с {@code @TenantId}
@@ -17,10 +15,7 @@ public class CurrentOwnerResolver implements CurrentTenantIdentifierResolver<Lon
 
     @Override
     public Long resolveCurrentTenantIdentifier() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication != null && authentication.getPrincipal() instanceof AccountPrincipal principal
-                ? principal.accountId()
-                : NO_OWNER;
+        return AccountPrincipal.current().map(AccountPrincipal::accountId).orElse(NO_OWNER);
     }
 
     @Override

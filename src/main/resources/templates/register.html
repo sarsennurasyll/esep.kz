@@ -8,7 +8,7 @@
         <div class="card import-card"><div class="card-body p-4">
             <h1 class="h3 mb-2">Регистрация</h1>
             <p class="text-secondary">Учётная запись нужна для полного анализа: история выписок, ваши правила назначений, доход и расход по месяцам.
-                Храним только адрес почты и хеш пароля.</p>
+                Для входа храним только адрес почты и хеш пароля.</p>
             <div th:if="${registerError}" class="alert alert-danger" th:text="${registerError}"></div>
             <form th:action="@{/register}" method="post">
                 <div class="mb-3">
@@ -26,7 +26,11 @@
                 </div>
                 <div class="form-check mb-3">
                     <input class="form-check-input" type="checkbox" id="consent" name="consent" value="true" required>
-                    <label class="form-check-label" for="consent">Я согласен с <a th:href="@{/privacy}">политикой конфиденциальности</a>.</label>
+                    <label class="form-check-label" for="consent">Я согласен с <a th:href="@{/privacy}">политикой конфиденциальности</a> и <a th:href="@{/terms}">пользовательским соглашением</a>.</label>
+                </div>
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="merchantContribution" name="merchantContribution" value="true">
+                    <label class="form-check-label" for="merchantContribution">Необязательно: помогать пополнять базу магазинов нераспознанными названиями из моих покупок, без сумм, дат и связи со мной (<a th:href="@{/privacy}">подробнее</a>).</label>
                 </div>
                 <button class="btn btn-primary w-100" type="submit">Зарегистрироваться</button>
             </form>

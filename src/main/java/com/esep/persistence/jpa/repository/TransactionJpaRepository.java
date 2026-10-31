@@ -21,6 +21,9 @@ public interface TransactionJpaRepository extends JpaRepository<Transaction, Lon
 
     long countByStatementIdIn(Collection<Long> statementIds);
 
+    @Query("select distinct transaction.description from Transaction transaction where transaction.merchant is null and transaction.bankOperationType = :type")
+    List<String> findUnknownDescriptions(@Param("type") BankOperationType type);
+
     @Query("""
             select transaction.merchant.id as merchantId,
                    count(transaction) as transactionCount,

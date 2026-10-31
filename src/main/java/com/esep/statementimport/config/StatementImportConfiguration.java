@@ -14,6 +14,7 @@ import com.esep.normalization.service.DefaultMerchantNormalizer;
 import com.esep.persistence.interfaces.StatementCatalog;
 import com.esep.persistence.interfaces.TransactionCatalog;
 import com.esep.statementimport.interfaces.StatementParser;
+import com.esep.statementimport.interfaces.StatementImportListener;
 import com.esep.statementimport.interfaces.StatementParserRegistry;
 import com.esep.statementimport.kaspi.KaspiMoneyFlowClassifier;
 import com.esep.statementimport.kaspi.KaspiStatementParser;
@@ -120,7 +121,8 @@ public class StatementImportConfiguration {
             MoneyFlowClassifierRegistry moneyFlowClassifierRegistry,
             MoneyPurposeResolver moneyPurposeResolver,
             StatementCatalog statementCatalog,
-            TransactionCatalog transactionCatalog
+            TransactionCatalog transactionCatalog,
+            StatementImportListener statementImportListener
     ) {
         return new DefaultStatementImportUseCase(
                 statementParserRegistry,
@@ -130,7 +132,8 @@ public class StatementImportConfiguration {
                 moneyFlowClassifierRegistry,
                 moneyPurposeResolver,
                 statementCatalog,
-                transactionCatalog
+                transactionCatalog,
+                statementImportListener
         );
     }
 }

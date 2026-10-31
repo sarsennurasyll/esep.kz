@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: head('Согласие с документами')}"></head>
+<body>
+<nav th:replace="~{fragments/layout :: navigation}"></nav>
+<main class="container pb-5">
+    <div class="row justify-content-center"><div class="col-md-7 col-lg-6">
+        <div class="card statement-card"><div class="card-body p-4">
+            <h1 class="h3 mb-3">Документы обновились</h1>
+            <p>Чтобы продолжить работу с полным анализом, примите текущие версии документов:</p>
+            <ul>
+                <li><a th:href="@{/privacy}">Политика конфиденциальности</a></li>
+                <li><a th:href="@{/terms}">Пользовательское соглашение</a></li>
+            </ul>
+            <div th:if="${consentError}" class="alert alert-danger" th:text="${consentError}"></div>
+            <form th:action="@{/consent}" method="post">
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="accept" name="accept" value="true" required>
+                    <label class="form-check-label" for="accept">Я прочитал документы и согласен с ними.</label>
+                </div>
+                <button class="btn btn-primary" type="submit">Принять</button>
+            </form>
+            <p class="small text-secondary mt-3 mb-0">Не согласны? Вы можете <a th:href="@{/account}">удалить учётную запись и все данные</a>.</p>
+        </div></div>
+    </div></div>
+</main>
+</body>
+</html>
