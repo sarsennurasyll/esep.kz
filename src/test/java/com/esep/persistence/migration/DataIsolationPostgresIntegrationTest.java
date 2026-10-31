@@ -1,6 +1,7 @@
 package com.esep.persistence.migration;
 
 import com.esep.account.service.AccountDeletionService;
+import com.esep.account.service.AccountRegistrationService;
 import com.esep.account.service.AccountService;
 import com.esep.account.service.LegacyDataClaimer;
 import com.esep.entity.BankType;
@@ -72,6 +73,8 @@ class DataIsolationPostgresIntegrationTest {
     private JdbcTemplate jdbc;
     @Autowired
     private AccountService accountService;
+    @Autowired
+    private AccountRegistrationService accountRegistrationService;
     @Autowired
     private AccountDeletionService accountDeletionService;
     @Autowired
@@ -190,8 +193,7 @@ class DataIsolationPostgresIntegrationTest {
     @Test
     void shouldDeleteOnlyOwnAccountDataAfterPasswordConfirmation() throws Exception {
         String email = "deleted-" + UUID.randomUUID() + "@example.test";
-        accountService.register(email, PASSWORD);
-        long owner = accountService.findByEmail(email).orElseThrow().getId();
+        long owner = account(email);
         operation(owner, statement(owner, "b".repeat(64)));
         ruleInSql(owner);
 
@@ -229,8 +231,7 @@ class DataIsolationPostgresIntegrationTest {
     }
 
     private long account(String email) {
-        accountService.register(email, PASSWORD);
-        return accountService.findByEmail(email).orElseThrow().getId();
+        return accountRegistrationService.register(email, PASSWORD, false);
     }
 
     private long statement(Long owner, String hash) {

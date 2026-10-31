@@ -10,6 +10,7 @@ import com.esep.persistence.interfaces.TransactionCatalog;
 import com.esep.persistence.model.StatementPersistenceCommand;
 import com.esep.persistence.model.TransactionPersistenceCommand;
 import com.esep.statementimport.exception.StatementAlreadyImportedException;
+import com.esep.statementimport.interfaces.StatementImportListener;
 import com.esep.statementimport.interfaces.StatementParserRegistry;
 import com.esep.statementimport.model.ImportResult;
 import com.esep.statementimport.model.ParsedStatement;
@@ -36,6 +37,7 @@ public class DefaultStatementImportUseCase {
     private final MoneyPurposeResolver moneyPurposeResolver;
     private final StatementCatalog statementCatalog;
     private final TransactionCatalog transactionCatalog;
+    private final StatementImportListener importListener;
     private final OverlappingOperationFilter overlappingOperationFilter = new OverlappingOperationFilter();
 
     public DefaultStatementImportUseCase(
@@ -48,6 +50,22 @@ public class DefaultStatementImportUseCase {
             StatementCatalog statementCatalog,
             TransactionCatalog transactionCatalog
     ) {
+        this(statementParserRegistry, statementImporter, transactionFingerprintGenerator, statementPeriodResolver,
+                moneyFlowClassifierRegistry, moneyPurposeResolver, statementCatalog, transactionCatalog, () -> { });
+    }
+
+    public DefaultStatementImportUseCase(
+            StatementParserRegistry statementParserRegistry,
+            DefaultStatementImporter statementImporter,
+            TransactionFingerprintGenerator transactionFingerprintGenerator,
+            StatementPeriodResolver statementPeriodResolver,
+            MoneyFlowClassifierRegistry moneyFlowClassifierRegistry,
+            MoneyPurposeResolver moneyPurposeResolver,
+            StatementCatalog statementCatalog,
+            TransactionCatalog transactionCatalog,
+            StatementImportListener importListener
+    ) {
+        this.importListener = importListener;
         this.statementParserRegistry = statementParserRegistry;
         this.statementImporter = statementImporter;
         this.transactionFingerprintGenerator = transactionFingerprintGenerator;
@@ -92,6 +110,7 @@ public class DefaultStatementImportUseCase {
                         .map(transaction -> toTransactionCommand(transaction, bankType, sourceFileHash))
                         .toList()
         );
+        importListener.statementImported();
 
         ImportResult importResult = statementImporter.createImportResult(processedTransactions);
         return new StatementImportResult(

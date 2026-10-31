@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Удаляет учётную запись и все её личные данные одной транзакцией. Общая база продавцов не меняется.
+ * Удаляет учётную запись и все её личные данные одной транзакцией. Общая база продавцов и присланные названия не меняются: они ни с кем не связаны.
  */
 @Service
 public class AccountDeletionService {
@@ -21,6 +21,7 @@ public class AccountDeletionService {
         jdbcTemplate.update("delete from transactions where owner_id = ?", accountId);
         jdbcTemplate.update("delete from statements where owner_id = ?", accountId);
         jdbcTemplate.update("delete from counterparty_purpose_rules where owner_id = ?", accountId);
+        jdbcTemplate.update("delete from user_consents where account_id = ?", accountId);
         jdbcTemplate.update("delete from user_accounts where id = ?", accountId);
     }
 }

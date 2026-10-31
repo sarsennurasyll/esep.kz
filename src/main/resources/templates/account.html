@@ -11,6 +11,12 @@
                 <dt class="col-sm-5">Электронная почта</dt><dd class="col-sm-7" th:text="${account.email}"></dd>
                 <dt class="col-sm-5">Создана</dt><dd class="col-sm-7" th:text="${#temporals.format(account.createdAt, 'dd.MM.yyyy')}"></dd>
             </dl>
+            <h2 class="h5">Пополнение базы магазинов</h2>
+            <p class="text-secondary">Необязательно. Передаются только нераспознанные названия из покупок, без сумм, дат и связи с вами. Уже переданное отозвать нельзя: название ни с кем не связано (<a th:href="@{/privacy}">подробнее</a>).</p>
+            <form class="mb-4" th:action="@{/account/contribution}" method="post">
+                <input type="hidden" name="enabled" th:value="${!contributing}">
+                <button class="btn btn-outline-primary" type="submit" th:text="${contributing} ? 'Отозвать согласие' : 'Дать согласие'"></button>
+            </form>
             <form th:action="@{/logout}" method="post"><button class="btn btn-outline-secondary" type="submit">Выйти</button></form>
             <hr class="my-4">
             <h2 class="h5">Удалить учётную запись</h2>

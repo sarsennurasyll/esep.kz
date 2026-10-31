@@ -12,6 +12,12 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 @ControllerAdvice
 public class CurrentAccountModelAdvice {
 
+    @ModelAttribute("currentAccountAdmin")
+    public boolean currentAccountAdmin() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication != null && authentication.getAuthorities().stream().anyMatch(authority -> "ROLE_ADMIN".equals(authority.getAuthority()));
+    }
+
     @ModelAttribute("currentAccountEmail")
     public String currentAccountEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();

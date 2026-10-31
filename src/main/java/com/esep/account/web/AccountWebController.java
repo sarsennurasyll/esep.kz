@@ -2,14 +2,16 @@ package com.esep.account.web;
 
 import com.esep.account.service.AccountDeletionService;
 import com.esep.account.service.AccountRegistrationException;
+import com.esep.account.service.AccountRegistrationService;
 import com.esep.account.service.AccountService;
+import com.esep.account.service.ConsentService;
+import com.esep.merchantmanagement.service.MerchantSuggestionService;
 import com.esep.security.AccountPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
 import org.springframework.stereotype.Controller;
@@ -33,15 +35,24 @@ public class AccountWebController {
     private final AccountService accountService;
     private final AccountDeletionService accountDeletionService;
     private final PasswordEncoder passwordEncoder;
+    private final AccountRegistrationService accountRegistrationService;
+    private final ConsentService consentService;
+    private final MerchantSuggestionService merchantSuggestionService;
 
     public AccountWebController(
             AccountService accountService,
             AccountDeletionService accountDeletionService,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            AccountRegistrationService accountRegistrationService,
+            ConsentService consentService,
+            MerchantSuggestionService merchantSuggestionService
     ) {
         this.accountService = accountService;
         this.accountDeletionService = accountDeletionService;
         this.passwordEncoder = passwordEncoder;
+        this.accountRegistrationService = accountRegistrationService;
+        this.consentService = consentService;
+        this.merchantSuggestionService = merchantSuggestionService;
     }
 
     @GetMapping("/login")
@@ -60,6 +71,7 @@ public class AccountWebController {
             @RequestParam String password,
             @RequestParam String passwordConfirmation,
             @RequestParam(name = "consent", defaultValue = "false") boolean consent,
+            @RequestParam(name = "merchantContribution", defaultValue = "false") boolean merchantContribution,
             Model model,
             HttpServletResponse response,
             RedirectAttributes attributes
@@ -72,7 +84,7 @@ public class AccountWebController {
             return registerError(model, response, PASSWORDS_DIFFER);
         }
         try {
-            accountService.register(email, password);
+            accountRegistrationService.register(email, password, merchantContribution);
         } catch (AccountRegistrationException exception) {
             return registerError(model, response, messageFor(exception.reason()));
         }
@@ -81,9 +93,38 @@ public class AccountWebController {
     }
 
     @GetMapping("/account")
-    public String account(@AuthenticationPrincipal UserDetails user, Model model) {
+    public String account(@AuthenticationPrincipal AccountPrincipal user, Model model) {
         model.addAttribute("account", accountService.findByEmail(user.getUsername()).orElseThrow());
+        model.addAttribute("contributing", consentService.isContributing(user.accountId()));
         return "account";
+    }
+
+    @PostMapping("/account/contribution")
+    public String contribution(@AuthenticationPrincipal AccountPrincipal user, @RequestParam boolean enabled) {
+        consentService.setContribution(user.accountId(), enabled);
+        merchantSuggestionService.contribute(user.accountId());
+        return "redirect:/account";
+    }
+
+    @GetMapping("/consent")
+    public String consent(@AuthenticationPrincipal AccountPrincipal user) {
+        return consentService.outstanding(user.accountId()).isEmpty() ? "redirect:/" : "consent";
+    }
+
+    @PostMapping("/consent")
+    public String acceptConsent(
+            @AuthenticationPrincipal AccountPrincipal user,
+            @RequestParam(name = "accept", defaultValue = "false") boolean accept,
+            Model model,
+            HttpServletResponse response
+    ) {
+        if (!accept) {
+            response.setStatus(HttpStatus.BAD_REQUEST.value());
+            model.addAttribute("consentError", "Отметьте согласие, чтобы продолжить.");
+            return "consent";
+        }
+        consentService.acceptRequired(user.accountId());
+        return "redirect:/";
     }
 
     @PostMapping("/account/delete")

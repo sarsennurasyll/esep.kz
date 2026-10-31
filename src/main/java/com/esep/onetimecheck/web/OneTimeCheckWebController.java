@@ -7,6 +7,7 @@ import com.esep.statementimport.web.StatementErrorMessages;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.esep.entity.LegalDocument;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -64,8 +65,15 @@ public class OneTimeCheckWebController {
     }
 
     @GetMapping("/privacy")
-    public String privacy() {
+    public String privacy(Model model) {
+        model.addAttribute("version", LegalDocument.PRIVACY.version());
         return "privacy";
+    }
+
+    @GetMapping("/terms")
+    public String terms(Model model) {
+        model.addAttribute("version", LegalDocument.TERMS.version());
+        return "terms";
     }
 
     private static String checkError(Model model, HttpServletResponse response, int status, String message) {
